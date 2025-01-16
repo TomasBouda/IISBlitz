@@ -1,0 +1,69 @@
+using System;
+using Avalonia;
+using Avalonia.Controls.ApplicationLifetimes;
+using Avalonia.Data.Core;
+using Avalonia.Data.Core.Plugins;
+using System.Linq;
+using System.Security.Principal;
+using Avalonia.Markup.Xaml;
+using TomLabs.IISBlitz.App.ViewModels;
+using TomLabs.IISBlitz.App.Views;
+
+namespace TomLabs.IISBlitz.App;
+
+public partial class App : Application
+{
+    public override void Initialize()
+    {
+        AvaloniaXamlLoader.Load(this);
+    }
+
+    public override void OnFrameworkInitializationCompleted()
+    {
+        if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
+        {
+            // Avoid duplicate validations from both Avalonia and the CommunityToolkit. 
+            // More info: https://docs.avaloniaui.net/docs/guides/development-guides/data-validation#manage-validationplugins
+            DisableAvaloniaDataAnnotationValidation();
+
+            if (IsRunningAsAdministrator())
+            {
+                desktop.MainWindow = new MainWindow
+                {
+                    DataContext = new MainWindowViewModel(),
+                };
+            }
+            else
+            {
+                desktop.MainWindow = new NoAdmin();
+            }
+        }
+
+        base.OnFrameworkInitializationCompleted();
+    }
+    
+    private static bool IsRunningAsAdministrator()
+    {
+        // Only check if we're on Windows
+        // (OperatingSystem.IsWindows requires .NET 6+)
+        if (!OperatingSystem.IsWindows())
+            return false;
+            
+        using var identity = WindowsIdentity.GetCurrent();
+        var principal = new WindowsPrincipal(identity);
+        return principal.IsInRole(WindowsBuiltInRole.Administrator);
+    }
+
+    private void DisableAvaloniaDataAnnotationValidation()
+    {
+        // Get an array of plugins to remove
+        var dataValidationPluginsToRemove =
+            BindingPlugins.DataValidators.OfType<DataAnnotationsValidationPlugin>().ToArray();
+
+        // remove each entry found
+        foreach (var plugin in dataValidationPluginsToRemove)
+        {
+            BindingPlugins.DataValidators.Remove(plugin);
+        }
+    }
+}

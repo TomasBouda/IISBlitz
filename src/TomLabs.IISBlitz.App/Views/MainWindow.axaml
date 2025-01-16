@@ -1,0 +1,75 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:TomLabs.IISBlitz.App.ViewModels"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:avaloniaEdit="https://github.com/avaloniaui/avaloniaedit"
+        xmlns:behaviours="clr-namespace:TomLabs.IISBlitz.App.Behaviours"
+        xmlns:avalonia="https://github.com/projektanker/icons.avalonia"
+        mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+        x:Class="TomLabs.IISBlitz.App.Views.MainWindow"
+        Icon="/Assets/lightning.ico"
+        Title="IISBlitz">
+
+    <Design.DataContext>
+        <vm:MainWindowViewModel/>
+    </Design.DataContext>
+    
+    <SplitView IsPaneOpen="True"
+               DisplayMode="Inline"
+               OpenPaneLength="300">
+        <SplitView.Pane>
+            <StackPanel>
+                <TextBlock Text="IIS Websites" FontSize="16" Margin="10"/>
+                <ListBox Name="SitesList" Margin="10" ItemsSource="{Binding SiteViewModel.SiteList}" SelectedItem="{Binding SiteViewModel.SelectedSite}">
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="{Binding Name}" Margin="0,0,10,0" FontWeight="Bold"/>
+                                <avalonia:Icon Value="fa-solid fa-play" IsVisible="{Binding IsRunning}" />
+                                <avalonia:Icon Value="fa-solid fa-stop" IsVisible="{Binding !IsRunning}" />
+                            </StackPanel>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>    
+                </ListBox>
+            </StackPanel>
+        </SplitView.Pane>
+
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"></RowDefinition>
+                <RowDefinition Height="*"></RowDefinition>
+            </Grid.RowDefinitions>
+            
+            <StackPanel Orientation="Horizontal" Grid.Row="0" IsVisible="{Binding SiteViewModel.SelectedSite}">
+                <Button Content="Start" Command="{Binding SiteViewModel.StartWebCmd}" IsVisible="{Binding !SiteViewModel.SelectedSite.IsRunning}"></Button>
+                <Button Content="Stop" Command="{Binding SiteViewModel.StopWebCmd}" IsVisible="{Binding SiteViewModel.SelectedSite.IsRunning}"></Button>
+                <Button Content="Start AppPool" Command="{Binding SiteViewModel.StartPoolCmd}" IsVisible="{Binding !SiteViewModel.SelectedSite.IsPoolRunning}"></Button>
+                <Button Content="Stop AppPool" Command="{Binding SiteViewModel.StopPoolCmd}" IsVisible="{Binding SiteViewModel.SelectedSite.IsPoolRunning}"></Button>
+                <Button Content="Open AppSettings" Command="{Binding SiteViewModel.OpenAppSettingsCmd}"></Button>
+                <Button Content="Open WebConfig" Command="{Binding SiteViewModel.OpenWebConfigCmd}"></Button>
+            </StackPanel>
+            
+            <TabControl Grid.Row="1" Margin="5">
+                <TabItem Header="appsettings.json">
+                    <avaloniaEdit:TextEditor ShowLineNumbers="True"
+                                             FontFamily="Cascadia Code,Consolas,Menlo,Monospace">
+                        <Interaction.Behaviors>
+                            <behaviours:DocumentTextBindingBehavior Text="{Binding SiteViewModel.SelectedSite.AppSettingsContent, Mode=TwoWay}"/>
+                        </Interaction.Behaviors>    
+                    </avaloniaEdit:TextEditor>
+                </TabItem>
+                <TabItem Header="web.config">
+                    <avaloniaEdit:TextEditor ShowLineNumbers="True"
+                                             FontFamily="Cascadia Code,Consolas,Menlo,Monospace">
+                        <Interaction.Behaviors>
+                            <behaviours:DocumentTextBindingBehavior Text="{Binding SiteViewModel.SelectedSite.WebConfigContent, Mode=TwoWay}"/>
+                        </Interaction.Behaviors>    
+                    </avaloniaEdit:TextEditor>
+                </TabItem>
+            </TabControl>
+            
+        </Grid>
+    </SplitView>
+
+</Window>

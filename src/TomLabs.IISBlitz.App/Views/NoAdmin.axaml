@@ -1,0 +1,13 @@
+﻿<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d" d:DesignWidth="200" d:DesignHeight="100"
+        x:Class="TomLabs.IISBlitz.App.Views.NoAdmin"
+        Title="NoAdmin">
+    <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+        <TextBlock FontSize="24">
+            Administrator privileges are required to run this application!
+        </TextBlock>
+    </StackPanel>
+</Window>

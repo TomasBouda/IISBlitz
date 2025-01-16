@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AvaloniaProject">
+    <option name="projectPerEditor">
+      <map>
+        <entry key="MyApp/App.axaml" value="MyApp/MyApp.csproj" />
+        <entry key="MyApp/Views/MainWindow.axaml" value="MyApp/MyApp.csproj" />
+        <entry key="TomLabs.IISBlitz.App/App.axaml" value="TomLabs.IISBlitz.App/TomLabs.IISBlitz.App.csproj" />
+        <entry key="TomLabs.IISBlitz.App/Views/MainWindow.axaml" value="TomLabs.IISBlitz.App/TomLabs.IISBlitz.App.csproj" />
+        <entry key="TomLabs.IISBlitz.App/Views/NoAdmin.axaml" value="TomLabs.IISBlitz.App/TomLabs.IISBlitz.App.csproj" />
+      </map>
+    </option>
+  </component>
+</project>
