@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Windows.Input;
+using Avalonia.Media.Imaging;
 using CommunityToolkit.Mvvm.ComponentModel;
 using Microsoft.Web.Administration;
 using ReactiveUI;
@@ -38,6 +39,7 @@ public partial class SiteViewModel : ObservableObject
     public ICommand StopPoolCmd { get; }
     public ICommand OpenAppSettingsCmd { get; }
     public ICommand OpenWebConfigCmd { get; }
+    public ICommand OpenWebFolderCmd { get; }
 
     public SiteViewModel()
     {
@@ -48,6 +50,7 @@ public partial class SiteViewModel : ObservableObject
 
         OpenAppSettingsCmd = ReactiveCommand.Create(OpenSiteAppSettings);
         OpenWebConfigCmd = ReactiveCommand.Create(OpenSiteWebConfig);
+        OpenWebFolderCmd = ReactiveCommand.Create(OpenWebFolder);
 
         _serverManager = new ServerManager();
         LoadIISSites();
@@ -93,6 +96,18 @@ public partial class SiteViewModel : ObservableObject
             }
         }
 
+        private void OpenWebFolder()
+        {
+            if (SelectedSite != null)
+            {
+                Process.Start(new System.Diagnostics.ProcessStartInfo() {
+                    FileName = SelectedSite.PhysicalPath,
+                    UseShellExecute = true,
+                    Verb = "open"
+                });
+            }
+        }
+
         private void OpenSiteAppSettings()
         {
             if (SelectedSite != null)
@@ -121,10 +136,6 @@ public partial class SiteViewModel : ObservableObject
                     UseShellExecute = true // This opens the file with the default associated application
                 });
             }
-            else
-            {
-                
-            }
         }
 
         private void LoadIISSites()
@@ -137,6 +148,8 @@ public partial class SiteViewModel : ObservableObject
                     if (existingSite == null)
                     {
                         var appPool = _serverManager.ApplicationPools[site.Applications[0].ApplicationPoolName];
+                        var sitePath = site.Applications[0].VirtualDirectories[0].PhysicalPath;
+                        sitePath = Environment.ExpandEnvironmentVariables(sitePath);
 
                         SiteList.Add(new SiteInfo
                         {
@@ -144,7 +157,7 @@ public partial class SiteViewModel : ObservableObject
                             IsRunning = site.State == ObjectState.Started,
                             IsPoolRunning = appPool.State == ObjectState.Started,
                             AppPool = site.Applications[0].ApplicationPoolName,
-                            PhysicalPath = site.Applications[0].VirtualDirectories[0].PhysicalPath
+                            PhysicalPath = sitePath,
                         });
                     }
                     else

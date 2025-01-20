@@ -1,4 +1,5 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
+﻿using Avalonia.Media.Imaging;
+using CommunityToolkit.Mvvm.ComponentModel;
 
 namespace TomLabs.IISBlitz.App.ViewModels;
 
@@ -24,6 +25,9 @@ public partial class SiteInfo : ObservableObject
     
     [ObservableProperty] 
     public string _webConfigContent;
+
+    [ObservableProperty]
+    public string _favicon;
 
     public override string ToString()
     {

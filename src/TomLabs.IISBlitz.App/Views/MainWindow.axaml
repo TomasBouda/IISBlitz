@@ -25,6 +25,7 @@
                     <ListBox.ItemTemplate>
                         <DataTemplate>
                             <StackPanel Orientation="Horizontal">
+                                <Image Source="{Binding Favicon}" />
                                 <TextBlock Text="{Binding Name}" Margin="0,0,10,0" FontWeight="Bold"/>
                                 <avalonia:Icon Value="fa-solid fa-play" IsVisible="{Binding IsRunning}" />
                                 <avalonia:Icon Value="fa-solid fa-stop" IsVisible="{Binding !IsRunning}" />
@@ -48,11 +49,12 @@
                 <Button Content="Stop AppPool" Command="{Binding SiteViewModel.StopPoolCmd}" IsVisible="{Binding SiteViewModel.SelectedSite.IsPoolRunning}"></Button>
                 <Button Content="Open AppSettings" Command="{Binding SiteViewModel.OpenAppSettingsCmd}"></Button>
                 <Button Content="Open WebConfig" Command="{Binding SiteViewModel.OpenWebConfigCmd}"></Button>
+                <Button Content="Open Folder" Command="{Binding SiteViewModel.OpenWebFolderCmd}"></Button>
             </StackPanel>
             
             <TabControl Grid.Row="1" Margin="5">
                 <TabItem Header="appsettings.json">
-                    <avaloniaEdit:TextEditor ShowLineNumbers="True"
+                    <avaloniaEdit:TextEditor ShowLineNumbers="True" IsReadOnly="True"
                                              FontFamily="Cascadia Code,Consolas,Menlo,Monospace">
                         <Interaction.Behaviors>
                             <behaviours:DocumentTextBindingBehavior Text="{Binding SiteViewModel.SelectedSite.AppSettingsContent, Mode=TwoWay}"/>
@@ -60,7 +62,7 @@
                     </avaloniaEdit:TextEditor>
                 </TabItem>
                 <TabItem Header="web.config">
-                    <avaloniaEdit:TextEditor ShowLineNumbers="True"
+                    <avaloniaEdit:TextEditor ShowLineNumbers="True" IsReadOnly="True"
                                              FontFamily="Cascadia Code,Consolas,Menlo,Monospace">
                         <Interaction.Behaviors>
                             <behaviours:DocumentTextBindingBehavior Text="{Binding SiteViewModel.SelectedSite.WebConfigContent, Mode=TwoWay}"/>
