@@ -40,6 +40,7 @@ public partial class SiteViewModel : ObservableObject
     public ICommand OpenAppSettingsCmd { get; }
     public ICommand OpenWebConfigCmd { get; }
     public ICommand OpenWebFolderCmd { get; }
+    public ICommand OpenWebLogCmd { get; }
 
     public SiteViewModel()
     {
@@ -51,11 +52,24 @@ public partial class SiteViewModel : ObservableObject
         OpenAppSettingsCmd = ReactiveCommand.Create(OpenSiteAppSettings);
         OpenWebConfigCmd = ReactiveCommand.Create(OpenSiteWebConfig);
         OpenWebFolderCmd = ReactiveCommand.Create(OpenWebFolder);
+        OpenWebLogCmd = ReactiveCommand.Create<string>(OpenLog);
 
         _serverManager = new ServerManager();
         LoadIISSites();
     }
-    
+
+    private void OpenLog(string log)
+    {
+        if (SelectedSite != null)
+        {
+            Process.Start(new System.Diagnostics.ProcessStartInfo() {
+                FileName = log,
+                UseShellExecute = true,
+                Verb = "open"
+            });
+        }
+    }
+
     private void StartWebsite()
         {
             if (SelectedSite != null)
@@ -150,6 +164,7 @@ public partial class SiteViewModel : ObservableObject
                         var appPool = _serverManager.ApplicationPools[site.Applications[0].ApplicationPoolName];
                         var sitePath = site.Applications[0].VirtualDirectories[0].PhysicalPath;
                         sitePath = Environment.ExpandEnvironmentVariables(sitePath);
+                        var logsDir = Path.Combine(sitePath, "logs");
 
                         SiteList.Add(new SiteInfo
                         {
@@ -158,13 +173,16 @@ public partial class SiteViewModel : ObservableObject
                             IsPoolRunning = appPool.State == ObjectState.Started,
                             AppPool = site.Applications[0].ApplicationPoolName,
                             PhysicalPath = sitePath,
+                            Logs = Directory.Exists(logsDir) ? new ObservableCollection<string>(Directory.GetFiles(logsDir, "*.log", SearchOption.AllDirectories)) : null
                         });
                     }
                     else
                     {
                         var appPool = _serverManager.ApplicationPools[site.Applications[0].ApplicationPoolName];
+                        var logsDir = Path.Combine(existingSite.PhysicalPath, "logs");
                         existingSite.IsRunning = site.State == ObjectState.Started;
                         existingSite.IsPoolRunning = appPool.State == ObjectState.Started;
+                        existingSite.Logs = Directory.Exists(logsDir) ? new ObservableCollection<string>(Directory.GetFiles(logsDir, "*.log", SearchOption.AllDirectories)) : null;
                     }
                 }
                 catch (Exception ex)

@@ -10,6 +10,7 @@
         <Title>IISBlitz</Title>
         <Authors>Tomas Bouda</Authors>
         <ApplicationIcon>Assets\lightning.ico</ApplicationIcon>
+        <Version>0.1.0</Version>
     </PropertyGroup>
     <ItemGroup>
         <Folder Include="Converters\" />
