@@ -6,84 +6,354 @@
         xmlns:avaloniaEdit="https://github.com/avaloniaui/avaloniaedit"
         xmlns:behaviours="clr-namespace:TomLabs.IISBlitz.App.Behaviours"
         xmlns:avalonia="https://github.com/projektanker/icons.avalonia"
-        mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+        xmlns:models="clr-namespace:TomLabs.IISBlitz.App.Models"
+        mc:Ignorable="d" d:DesignWidth="1100" d:DesignHeight="700"
         x:Class="TomLabs.IISBlitz.App.Views.MainWindow"
+        x:DataType="vm:MainWindowViewModel"
         Icon="/Assets/lightning.ico"
-        Title="IISBlitz">
+        Title="IISBlitz"
+        MinWidth="900" MinHeight="600"
+        Width="1100" Height="700"
+        WindowStartupLocation="CenterScreen">
 
     <Design.DataContext>
         <vm:MainWindowViewModel/>
     </Design.DataContext>
-    
-    <SplitView IsPaneOpen="True"
-               DisplayMode="Inline"
-               OpenPaneLength="300">
-        <SplitView.Pane>
-            <StackPanel>
-                <TextBlock Text="IIS Websites" FontSize="16" Margin="10"/>
-                <ListBox Name="SitesList" Margin="10" ItemsSource="{Binding SiteViewModel.SiteList}" SelectedItem="{Binding SiteViewModel.SelectedSite}">
-                    <ListBox.ItemTemplate>
-                        <DataTemplate>
-                            <StackPanel Orientation="Horizontal">
-                                <Image Source="{Binding Favicon}" />
-                                <TextBlock Text="{Binding Name}" Margin="0,0,10,0" FontWeight="Bold"/>
-                                <avalonia:Icon Value="fa-solid fa-play" IsVisible="{Binding IsRunning}" />
-                                <avalonia:Icon Value="fa-solid fa-stop" IsVisible="{Binding !IsRunning}" />
-                            </StackPanel>
-                        </DataTemplate>
-                    </ListBox.ItemTemplate>    
-                </ListBox>
-            </StackPanel>
-        </SplitView.Pane>
 
-        <Grid>
-            <Grid.RowDefinitions>
-                <RowDefinition Height="Auto"></RowDefinition>
-                <RowDefinition Height="*"></RowDefinition>
-            </Grid.RowDefinitions>
-            
-            <StackPanel Orientation="Horizontal" Grid.Row="0" IsVisible="{Binding SiteViewModel.SelectedSite}">
-                <Button Content="Start" Command="{Binding SiteViewModel.StartWebCmd}" IsVisible="{Binding !SiteViewModel.SelectedSite.IsRunning}"></Button>
-                <Button Content="Stop" Command="{Binding SiteViewModel.StopWebCmd}" IsVisible="{Binding SiteViewModel.SelectedSite.IsRunning}"></Button>
-                <Button Content="Start AppPool" Command="{Binding SiteViewModel.StartPoolCmd}" IsVisible="{Binding !SiteViewModel.SelectedSite.IsPoolRunning}"></Button>
-                <Button Content="Stop AppPool" Command="{Binding SiteViewModel.StopPoolCmd}" IsVisible="{Binding SiteViewModel.SelectedSite.IsPoolRunning}"></Button>
-                <Button Content="Open AppSettings" Command="{Binding SiteViewModel.OpenAppSettingsCmd}"></Button>
-                <Button Content="Open WebConfig" Command="{Binding SiteViewModel.OpenWebConfigCmd}"></Button>
-                <Button Content="Open Folder" Command="{Binding SiteViewModel.OpenWebFolderCmd}"></Button>
-            </StackPanel>
-            
-            <TabControl Grid.Row="1" Margin="5">
-                <TabItem Header="appsettings.json">
-                    <avaloniaEdit:TextEditor ShowLineNumbers="True" IsReadOnly="True"
-                                             FontFamily="Cascadia Code,Consolas,Menlo,Monospace">
-                        <Interaction.Behaviors>
-                            <behaviours:DocumentTextBindingBehavior Text="{Binding SiteViewModel.SelectedSite.AppSettingsContent, Mode=TwoWay}"/>
-                        </Interaction.Behaviors>    
-                    </avaloniaEdit:TextEditor>
-                </TabItem>
-                <TabItem Header="web.config">
-                    <avaloniaEdit:TextEditor ShowLineNumbers="True" IsReadOnly="True"
-                                             FontFamily="Cascadia Code,Consolas,Menlo,Monospace">
-                        <Interaction.Behaviors>
-                            <behaviours:DocumentTextBindingBehavior Text="{Binding SiteViewModel.SelectedSite.WebConfigContent, Mode=TwoWay}"/>
-                        </Interaction.Behaviors>    
-                    </avaloniaEdit:TextEditor>
-                </TabItem>
-                <TabItem Header="logs">
-                    <ListBox Margin="10" ItemsSource="{Binding SiteViewModel.SelectedSite.Logs}">
+    <Grid RowDefinitions="*,Auto">
+
+        <!-- Main content -->
+        <SplitView Grid.Row="0"
+                   IsPaneOpen="True"
+                   DisplayMode="Inline"
+                   OpenPaneLength="300">
+
+            <!-- Left Pane: Site List -->
+            <SplitView.Pane>
+                <DockPanel>
+                    <!-- Header bar -->
+                    <Border DockPanel.Dock="Top" Padding="12,10" Background="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}">
+                        <Grid ColumnDefinitions="Auto,*,Auto">
+                            <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                <avalonia:Icon Value="fa-solid fa-bolt" FontSize="18" Foreground="#FFC107"/>
+                                <TextBlock Text="IISBlitz" FontSize="18" FontWeight="Bold" VerticalAlignment="Center"/>
+                            </StackPanel>
+                            <Button Grid.Column="2"
+                                    Command="{Binding SiteViewModel.RefreshSitesCmd}"
+                                    ToolTip.Tip="Refresh sites"
+                                    Background="Transparent"
+                                    Padding="8">
+                                <avalonia:Icon Value="fa-solid fa-arrows-rotate" FontSize="14"/>
+                            </Button>
+                        </Grid>
+                    </Border>
+
+                    <!-- Search box -->
+                    <TextBox DockPanel.Dock="Top"
+                             Watermark="Search sites..."
+                             Text="{Binding SiteViewModel.SearchText}"
+                             Margin="8,8,8,4"/>
+
+                    <!-- Site list -->
+                    <ListBox Name="SitesList"
+                             Margin="4,4,4,0"
+                             ItemsSource="{Binding SiteViewModel.FilteredSiteList}"
+                             SelectedItem="{Binding SiteViewModel.SelectedSite}">
                         <ListBox.ItemTemplate>
-                            <DataTemplate>
-                                <StackPanel Orientation="Horizontal">
-                                    <TextBlock Text="{Binding}" Margin="0,0,10,0" FontWeight="Bold"/>
-                                    <Button Content="Open" Command="{Binding DataContext.SiteViewModel.OpenWebLogCmd, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}"/>
-                                </StackPanel>
+                            <DataTemplate x:DataType="vm:SiteInfo">
+                                <Grid ColumnDefinitions="Auto,*" Margin="4,6">
+                                    <!-- Status indicator circle -->
+                                    <Ellipse Grid.Column="0"
+                                             Width="12" Height="12"
+                                             Margin="0,0,10,0"
+                                             VerticalAlignment="Center">
+                                        <Ellipse.Fill>
+                                            <SolidColorBrush Color="{Binding IsRunning, Converter={x:Static BoolConverters.Not}, ConverterParameter=foo, FallbackValue=#4CAF50}"/>
+                                        </Ellipse.Fill>
+                                    </Ellipse>
+                                    <!-- Use a panel overlay to handle boolean-to-color since Avalonia doesn't have a simple bool-to-color converter -->
+                                    <Ellipse Grid.Column="0"
+                                             Width="12" Height="12"
+                                             Margin="0,0,10,0"
+                                             VerticalAlignment="Center"
+                                             Fill="#4CAF50"
+                                             IsVisible="{Binding IsRunning}"/>
+                                    <Ellipse Grid.Column="0"
+                                             Width="12" Height="12"
+                                             Margin="0,0,10,0"
+                                             VerticalAlignment="Center"
+                                             Fill="#9E9E9E"
+                                             IsVisible="{Binding !IsRunning}"/>
+
+                                    <StackPanel Grid.Column="1">
+                                        <TextBlock Text="{Binding Name}" FontWeight="SemiBold" FontSize="13"/>
+                                        <TextBlock Text="{Binding AppPool}" FontSize="11" Opacity="0.6"/>
+                                    </StackPanel>
+                                </Grid>
                             </DataTemplate>
-                        </ListBox.ItemTemplate>    
+                        </ListBox.ItemTemplate>
                     </ListBox>
-                </TabItem>
-            </TabControl>
-            
-        </Grid>
-    </SplitView>
+                </DockPanel>
+            </SplitView.Pane>
+
+            <!-- Right Pane: Detail area -->
+            <Grid RowDefinitions="Auto,*">
+
+                <!-- Toolbar -->
+                <Border Grid.Row="0"
+                        Padding="6,4"
+                        Background="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}"
+                        IsVisible="{Binding SiteViewModel.SelectedSite, Converter={x:Static ObjectConverters.IsNotNull}}">
+                    <WrapPanel Orientation="Horizontal">
+
+                        <!-- Site controls -->
+                        <Button Command="{Binding SiteViewModel.StartWebCmd}"
+                                IsVisible="{Binding !SiteViewModel.SelectedSite.IsRunning}"
+                                ToolTip.Tip="Start website"
+                                Margin="2" Padding="8,6">
+                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                <avalonia:Icon Value="fa-solid fa-play" FontSize="12"/>
+                                <TextBlock Text="Start" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </Button>
+                        <Button Command="{Binding SiteViewModel.StopWebCmd}"
+                                IsVisible="{Binding SiteViewModel.SelectedSite.IsRunning}"
+                                ToolTip.Tip="Stop website"
+                                Margin="2" Padding="8,6">
+                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                <avalonia:Icon Value="fa-solid fa-stop" FontSize="12"/>
+                                <TextBlock Text="Stop" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </Button>
+                        <Button Command="{Binding SiteViewModel.RestartSiteCmd}"
+                                ToolTip.Tip="Restart website (stop + start)"
+                                Margin="2" Padding="8,6">
+                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                <avalonia:Icon Value="fa-solid fa-rotate" FontSize="12"/>
+                                <TextBlock Text="Restart" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </Button>
+                        <Button Command="{Binding SiteViewModel.BrowseSiteCmd}"
+                                ToolTip.Tip="Open site URL in browser"
+                                Margin="2" Padding="8,6">
+                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                <avalonia:Icon Value="fa-solid fa-globe" FontSize="12"/>
+                                <TextBlock Text="Browse" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </Button>
+
+                        <!-- Separator -->
+                        <Border Width="1" Height="24" Background="{DynamicResource SystemControlForegroundBaseMediumBrush}" Margin="6,0" VerticalAlignment="Center"/>
+
+                        <!-- App pool controls -->
+                        <Button Command="{Binding SiteViewModel.StartPoolCmd}"
+                                IsVisible="{Binding !SiteViewModel.SelectedSite.IsPoolRunning}"
+                                ToolTip.Tip="Start application pool"
+                                Margin="2" Padding="8,6">
+                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                <avalonia:Icon Value="fa-solid fa-play" FontSize="12"/>
+                                <TextBlock Text="Start Pool" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </Button>
+                        <Button Command="{Binding SiteViewModel.StopPoolCmd}"
+                                IsVisible="{Binding SiteViewModel.SelectedSite.IsPoolRunning}"
+                                ToolTip.Tip="Stop application pool"
+                                Margin="2" Padding="8,6">
+                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                <avalonia:Icon Value="fa-solid fa-stop" FontSize="12"/>
+                                <TextBlock Text="Stop Pool" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </Button>
+
+                        <!-- Separator -->
+                        <Border Width="1" Height="24" Background="{DynamicResource SystemControlForegroundBaseMediumBrush}" Margin="6,0" VerticalAlignment="Center"/>
+
+                        <!-- File/folder actions -->
+                        <Button Command="{Binding SiteViewModel.OpenWebFolderCmd}"
+                                ToolTip.Tip="Open site folder in Explorer"
+                                Margin="2" Padding="8,6">
+                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                <avalonia:Icon Value="fa-solid fa-folder-open" FontSize="12"/>
+                                <TextBlock Text="Folder" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </Button>
+                        <Button Command="{Binding SiteViewModel.CopyPathCmd}"
+                                ToolTip.Tip="Copy site physical path to clipboard"
+                                Margin="2" Padding="8,6">
+                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                <avalonia:Icon Value="fa-solid fa-copy" FontSize="12"/>
+                                <TextBlock Text="Copy Path" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </Button>
+                        <Button Command="{Binding SiteViewModel.OpenAppSettingsCmd}"
+                                ToolTip.Tip="Open appsettings.json in default editor"
+                                Margin="2" Padding="8,6">
+                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                <avalonia:Icon Value="fa-solid fa-gear" FontSize="12"/>
+                                <TextBlock Text="AppSettings" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </Button>
+                        <Button Command="{Binding SiteViewModel.OpenWebConfigCmd}"
+                                ToolTip.Tip="Open web.config in default editor"
+                                Margin="2" Padding="8,6">
+                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                <avalonia:Icon Value="fa-solid fa-file-code" FontSize="12"/>
+                                <TextBlock Text="Web.config" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </Button>
+                    </WrapPanel>
+                </Border>
+
+                <!-- Tab control -->
+                <TabControl Grid.Row="1" Margin="5">
+
+                    <!-- Details tab -->
+                    <TabItem Header="Details" IsVisible="{Binding SiteViewModel.SelectedSite, Converter={x:Static ObjectConverters.IsNotNull}}">
+                        <ScrollViewer Padding="16">
+                            <StackPanel Spacing="16">
+                                <!-- Site info -->
+                                <StackPanel Spacing="4">
+                                    <TextBlock Text="Site Information" FontWeight="Bold" FontSize="16" Margin="0,0,0,8"/>
+
+                                    <Grid ColumnDefinitions="120,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto" Margin="0,0,0,8">
+                                        <TextBlock Grid.Row="0" Grid.Column="0" Text="Name:" FontWeight="SemiBold" Margin="0,2"/>
+                                        <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding SiteViewModel.SelectedSite.Name}" Margin="0,2"/>
+
+                                        <TextBlock Grid.Row="1" Grid.Column="0" Text="Physical Path:" FontWeight="SemiBold" Margin="0,2"/>
+                                        <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding SiteViewModel.SelectedSite.PhysicalPath}" Margin="0,2" TextWrapping="Wrap"/>
+
+                                        <TextBlock Grid.Row="2" Grid.Column="0" Text="App Pool:" FontWeight="SemiBold" Margin="0,2"/>
+                                        <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding SiteViewModel.SelectedSite.AppPool}" Margin="0,2"/>
+
+                                        <TextBlock Grid.Row="3" Grid.Column="0" Text="Site State:" FontWeight="SemiBold" Margin="0,2"/>
+                                        <StackPanel Grid.Row="3" Grid.Column="1" Orientation="Horizontal" Spacing="6" Margin="0,2">
+                                            <Ellipse Width="10" Height="10" Fill="#4CAF50" IsVisible="{Binding SiteViewModel.SelectedSite.IsRunning}" VerticalAlignment="Center"/>
+                                            <Ellipse Width="10" Height="10" Fill="#9E9E9E" IsVisible="{Binding !SiteViewModel.SelectedSite.IsRunning}" VerticalAlignment="Center"/>
+                                            <TextBlock VerticalAlignment="Center">
+                                                <TextBlock.Text>
+                                                    <MultiBinding StringFormat="{}{0}">
+                                                        <Binding Path="SiteViewModel.SelectedSite.IsRunning"/>
+                                                    </MultiBinding>
+                                                </TextBlock.Text>
+                                            </TextBlock>
+                                        </StackPanel>
+
+                                        <TextBlock Grid.Row="4" Grid.Column="0" Text="Pool State:" FontWeight="SemiBold" Margin="0,2"/>
+                                        <StackPanel Grid.Row="4" Grid.Column="1" Orientation="Horizontal" Spacing="6" Margin="0,2">
+                                            <Ellipse Width="10" Height="10" Fill="#4CAF50" IsVisible="{Binding SiteViewModel.SelectedSite.IsPoolRunning}" VerticalAlignment="Center"/>
+                                            <Ellipse Width="10" Height="10" Fill="#9E9E9E" IsVisible="{Binding !SiteViewModel.SelectedSite.IsPoolRunning}" VerticalAlignment="Center"/>
+                                            <TextBlock VerticalAlignment="Center">
+                                                <TextBlock.Text>
+                                                    <MultiBinding StringFormat="{}{0}">
+                                                        <Binding Path="SiteViewModel.SelectedSite.IsPoolRunning"/>
+                                                    </MultiBinding>
+                                                </TextBlock.Text>
+                                            </TextBlock>
+                                        </StackPanel>
+                                    </Grid>
+                                </StackPanel>
+
+                                <!-- Bindings -->
+                                <StackPanel Spacing="4">
+                                    <TextBlock Text="Bindings" FontWeight="Bold" FontSize="16" Margin="0,0,0,8"/>
+                                    <Border BorderBrush="{DynamicResource SystemControlForegroundBaseMediumBrush}" BorderThickness="1" CornerRadius="4">
+                                        <DataGrid ItemsSource="{Binding SiteViewModel.SelectedSite.Bindings}"
+                                                  AutoGenerateColumns="False"
+                                                  IsReadOnly="True"
+                                                  HeadersVisibility="Column"
+                                                  GridLinesVisibility="Horizontal"
+                                                  CanUserResizeColumns="True">
+                                            <DataGrid.Columns>
+                                                <DataGridTextColumn Header="Protocol" Binding="{Binding Protocol}" Width="100"/>
+                                                <DataGridTextColumn Header="Host" Binding="{Binding Host}" Width="*"/>
+                                                <DataGridTextColumn Header="Port" Binding="{Binding Port}" Width="80"/>
+                                                <DataGridTextColumn Header="Binding Info" Binding="{Binding BindingInformation}" Width="*"/>
+                                            </DataGrid.Columns>
+                                        </DataGrid>
+                                    </Border>
+                                </StackPanel>
+                            </StackPanel>
+                        </ScrollViewer>
+                    </TabItem>
+
+                    <!-- appsettings.json tab -->
+                    <TabItem Header="appsettings.json">
+                        <avaloniaEdit:TextEditor ShowLineNumbers="True" IsReadOnly="True"
+                                                 FontFamily="Cascadia Code,Consolas,Menlo,Monospace">
+                            <Interaction.Behaviors>
+                                <behaviours:DocumentTextBindingBehavior Text="{Binding SiteViewModel.SelectedSite.AppSettingsContent, Mode=TwoWay}"/>
+                            </Interaction.Behaviors>
+                        </avaloniaEdit:TextEditor>
+                    </TabItem>
+
+                    <!-- web.config tab -->
+                    <TabItem Header="web.config">
+                        <avaloniaEdit:TextEditor ShowLineNumbers="True" IsReadOnly="True"
+                                                 FontFamily="Cascadia Code,Consolas,Menlo,Monospace">
+                            <Interaction.Behaviors>
+                                <behaviours:DocumentTextBindingBehavior Text="{Binding SiteViewModel.SelectedSite.WebConfigContent, Mode=TwoWay}"/>
+                            </Interaction.Behaviors>
+                        </avaloniaEdit:TextEditor>
+                    </TabItem>
+
+                    <!-- Logs tab -->
+                    <TabItem Header="Logs">
+                        <DockPanel>
+                            <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="10,6">
+                                <Button Command="{Binding SiteViewModel.RefreshLogsCmd}"
+                                        ToolTip.Tip="Refresh log file list"
+                                        Padding="8,4">
+                                    <StackPanel Orientation="Horizontal" Spacing="6">
+                                        <avalonia:Icon Value="fa-solid fa-arrows-rotate" FontSize="12"/>
+                                        <TextBlock Text="Refresh" VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                </Button>
+                            </StackPanel>
+                            <ListBox Margin="10,4" ItemsSource="{Binding SiteViewModel.SelectedSite.Logs}">
+                                <ListBox.ItemTemplate>
+                                    <DataTemplate x:DataType="x:String">
+                                        <Grid ColumnDefinitions="*,Auto" Margin="2,4">
+                                            <TextBlock Grid.Column="0" Text="{Binding}" FontSize="12" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                                            <Button Grid.Column="1"
+                                                    Content="Open"
+                                                    Command="{Binding #SitesList.((vm:MainWindowViewModel)DataContext).SiteViewModel.OpenWebLogCmd}"
+                                                    CommandParameter="{Binding}"
+                                                    Padding="8,2"
+                                                    Margin="8,0,0,0"/>
+                                        </Grid>
+                                    </DataTemplate>
+                                </ListBox.ItemTemplate>
+                            </ListBox>
+                        </DockPanel>
+                    </TabItem>
+                </TabControl>
+            </Grid>
+        </SplitView>
+
+        <!-- Status Bar -->
+        <Border Grid.Row="1"
+                Padding="12,6"
+                Background="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}"
+                BorderThickness="0,1,0,0"
+                BorderBrush="{DynamicResource SystemControlForegroundBaseMediumBrush}">
+            <Grid ColumnDefinitions="Auto,*,Auto">
+                <TextBlock Grid.Column="0"
+                           FontSize="12"
+                           Opacity="0.7"
+                           VerticalAlignment="Center">
+                    <TextBlock.Text>
+                        <MultiBinding StringFormat="{}{0} sites">
+                            <Binding Path="SiteViewModel.TotalSiteCount"/>
+                        </MultiBinding>
+                    </TextBlock.Text>
+                </TextBlock>
+                <TextBlock Grid.Column="2"
+                           Text="{Binding SiteViewModel.StatusText}"
+                           FontSize="12"
+                           Opacity="0.7"
+                           VerticalAlignment="Center"/>
+            </Grid>
+        </Border>
+    </Grid>
 
 </Window>

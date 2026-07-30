@@ -1,40 +1,42 @@
 ﻿using System.Collections.ObjectModel;
-using Avalonia.Media.Imaging;
+using System.Linq;
 using CommunityToolkit.Mvvm.ComponentModel;
+using TomLabs.IISBlitz.App.Models;
 
 namespace TomLabs.IISBlitz.App.ViewModels;
 
 public partial class SiteInfo : ObservableObject
 {
     [ObservableProperty]
-    public string _name;
+    private string _name = string.Empty;
 
     [ObservableProperty]
-    public bool _isRunning;
-        
-    [ObservableProperty]
-    public bool _isPoolRunning;
-
-    [ObservableProperty] 
-    public string _appPool;
-        
-    [ObservableProperty]
-    public string _physicalPath;
-
-    [ObservableProperty] 
-    public string _appSettingsContent;
-    
-    [ObservableProperty] 
-    public string _webConfigContent;
+    private bool _isRunning;
 
     [ObservableProperty]
-    public string _favicon;
-    
-    [ObservableProperty]
-    public ObservableCollection<string>? _logs;
+    private bool _isPoolRunning;
 
-    public override string ToString()
-    {
-        return $"{Name}";
-    }
+    [ObservableProperty]
+    private string _appPool = string.Empty;
+
+    [ObservableProperty]
+    private string _physicalPath = string.Empty;
+
+    [ObservableProperty]
+    private string? _appSettingsContent;
+
+    [ObservableProperty]
+    private string? _webConfigContent;
+
+    [ObservableProperty]
+    private ObservableCollection<string>? _logs;
+
+    [ObservableProperty]
+    private ObservableCollection<BindingInfo> _bindings = new();
+
+    public string? Url => Bindings?.FirstOrDefault() is { } b
+        ? $"{b.Protocol}://{(string.IsNullOrEmpty(b.Host) ? "localhost" : b.Host)}:{b.Port}"
+        : null;
+
+    public override string ToString() => Name;
 }

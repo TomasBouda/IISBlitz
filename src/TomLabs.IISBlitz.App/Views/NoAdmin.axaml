@@ -2,12 +2,32 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        mc:Ignorable="d" d:DesignWidth="200" d:DesignHeight="100"
+        xmlns:avalonia="https://github.com/projektanker/icons.avalonia"
+        mc:Ignorable="d" d:DesignWidth="400" d:DesignHeight="200"
         x:Class="TomLabs.IISBlitz.App.Views.NoAdmin"
-        Title="NoAdmin">
-    <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
-        <TextBlock FontSize="24">
-            Administrator privileges are required to run this application!
-        </TextBlock>
+        Icon="/Assets/lightning.ico"
+        Title="IISBlitz — Administrator Required"
+        Width="450" Height="220"
+        CanResize="False"
+        WindowStartupLocation="CenterScreen">
+    <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="16" Margin="24">
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="12">
+            <avalonia:Icon Value="fa-solid fa-bolt" FontSize="32" Foreground="#FFC107"/>
+            <TextBlock Text="IISBlitz" FontSize="24" FontWeight="Bold" VerticalAlignment="Center"/>
+        </StackPanel>
+        <TextBlock Text="Administrator privileges are required to manage IIS sites."
+                   FontSize="14"
+                   TextAlignment="Center"
+                   TextWrapping="Wrap"
+                   Opacity="0.8"/>
+        <Button Name="RestartAsAdminBtn"
+                HorizontalAlignment="Center"
+                Padding="16,8"
+                Click="OnRestartAsAdminClick">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+                <avalonia:Icon Value="fa-solid fa-shield-halved" FontSize="14"/>
+                <TextBlock Text="Restart as Administrator" VerticalAlignment="Center"/>
+            </StackPanel>
+        </Button>
     </StackPanel>
 </Window>

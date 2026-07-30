@@ -7,7 +7,7 @@ namespace TomLabs.IISBlitz.App.Behaviours;
 
 public class DocumentTextBindingBehavior : Behavior<TextEditor>
 {
-    private TextEditor _textEditor = null;
+    private TextEditor? _textEditor;
 
     public static readonly StyledProperty<string> TextProperty =
         AvaloniaProperty.Register<DocumentTextBindingBehavior, string>(nameof(Text));
@@ -40,7 +40,7 @@ public class DocumentTextBindingBehavior : Behavior<TextEditor>
         }
     }
 
-    private void TextChanged(object sender, EventArgs eventArgs)
+    private void TextChanged(object? sender, EventArgs eventArgs)
     {
         if (_textEditor != null && _textEditor.Document != null)
         {
