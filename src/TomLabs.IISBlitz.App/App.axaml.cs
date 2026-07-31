@@ -28,10 +28,18 @@ public partial class App : Application
 
             if (IsRunningAsAdministrator())
             {
-                desktop.MainWindow = new MainWindow
+                try
                 {
-                    DataContext = new MainWindowViewModel(),
-                };
+                    desktop.MainWindow = new MainWindow
+                    {
+                        DataContext = new MainWindowViewModel(),
+                    };
+                }
+                catch (Exception ex)
+                {
+                    desktop.MainWindow = new NoAdmin();
+                    Console.Error.WriteLine($"Failed to initialize: {ex}");
+                }
             }
             else
             {

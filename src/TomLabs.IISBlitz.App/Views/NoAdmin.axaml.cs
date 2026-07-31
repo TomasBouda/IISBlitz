@@ -16,17 +16,45 @@ public partial class NoAdmin : Window
     {
         try
         {
-            var exePath = Environment.ProcessPath ?? Process.GetCurrentProcess().MainModule?.FileName;
-            if (exePath != null)
+            var mainModule = Process.GetCurrentProcess().MainModule;
+            var hostPath = mainModule?.FileName;
+
+            if (hostPath == null)
+                return;
+
+            // When running via "dotnet run", the host is dotnet.exe — we need to pass the DLL as an argument
+            var isDotnetHost = hostPath.EndsWith("dotnet.exe", StringComparison.OrdinalIgnoreCase)
+                            || hostPath.EndsWith("dotnet", StringComparison.OrdinalIgnoreCase);
+
+            if (isDotnetHost)
             {
+                // Find the app DLL from command line args
+                var args = Environment.GetCommandLineArgs();
+                var dllPath = args.Length > 0 ? args[0] : null;
+
+                if (dllPath != null)
+                {
+                    Process.Start(new ProcessStartInfo
+                    {
+                        FileName = hostPath,
+                        Arguments = $"\"{dllPath}\"",
+                        UseShellExecute = true,
+                        Verb = "runas"
+                    });
+                }
+            }
+            else
+            {
+                // Published single-file exe — just re-launch itself
                 Process.Start(new ProcessStartInfo
                 {
-                    FileName = exePath,
+                    FileName = hostPath,
                     UseShellExecute = true,
                     Verb = "runas"
                 });
-                Close();
             }
+
+            Close();
         }
         catch (Exception)
         {

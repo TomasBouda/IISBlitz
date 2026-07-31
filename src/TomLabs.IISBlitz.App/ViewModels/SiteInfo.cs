@@ -34,6 +34,30 @@ public partial class SiteInfo : ObservableObject
     [ObservableProperty]
     private ObservableCollection<BindingInfo> _bindings = new();
 
+    [ObservableProperty]
+    private string? _selectedLogContent;
+
+    [ObservableProperty]
+    private string? _selectedLogPath;
+
+    [ObservableProperty]
+    private ObservableCollection<WorkerProcessInfo> _workerProcesses = new();
+
+    [ObservableProperty]
+    private ObservableCollection<CertificateInfo> _certificates = new();
+
+    [ObservableProperty]
+    private ObservableCollection<string> _appSettingsFiles = new();
+
+    [ObservableProperty]
+    private string? _selectedAppSettingsFile;
+
+    [ObservableProperty]
+    private string _currentEnvironment = "Production";
+
+    [ObservableProperty]
+    private ObservableCollection<string> _availableEnvironments = new();
+
     public string? Url => Bindings?.FirstOrDefault() is { } b
         ? $"{b.Protocol}://{(string.IsNullOrEmpty(b.Host) ? "localhost" : b.Host)}:{b.Port}"
         : null;
