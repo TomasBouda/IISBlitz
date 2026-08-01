@@ -47,6 +47,9 @@ public partial class SiteInfo : ObservableObject
     private ObservableCollection<CertificateInfo> _certificates = new();
 
     [ObservableProperty]
+    private ObservableCollection<FolderPermissionEntry> _permissions = new();
+
+    [ObservableProperty]
     private ObservableCollection<string> _appSettingsFiles = new();
 
     [ObservableProperty]

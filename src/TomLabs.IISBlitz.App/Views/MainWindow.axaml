@@ -458,6 +458,78 @@
                         </DockPanel>
                     </TabItem>
 
+                    <!-- Permissions tab -->
+                    <TabItem Header="Permissions">
+                        <DockPanel>
+                            <Border DockPanel.Dock="Top" Padding="8,4"
+                                    Background="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}"
+                                    BorderThickness="0,0,0,1"
+                                    BorderBrush="{DynamicResource SystemControlForegroundBaseMediumLowBrush}">
+                                <StackPanel Orientation="Horizontal" Spacing="6">
+                                    <Button Command="{Binding SiteViewModel.LoadPermissionsCmd}"
+                                            ToolTip.Tip="Reload permissions"
+                                            Padding="8,5" CornerRadius="4">
+                                        <StackPanel Orientation="Horizontal" Spacing="6">
+                                            <avalonia:Icon Value="fa-solid fa-arrows-rotate" FontSize="12"/>
+                                            <TextBlock Text="Refresh" VerticalAlignment="Center" FontSize="12"/>
+                                        </StackPanel>
+                                    </Button>
+                                    <Border Width="1" Height="20" Background="{DynamicResource SystemControlForegroundBaseMediumLowBrush}" Margin="4,0" VerticalAlignment="Center" Opacity="0.5"/>
+                                    <TextBox Watermark="User or group (e.g. IIS_IUSRS)"
+                                             Text="{Binding SiteViewModel.NewPermissionIdentity}"
+                                             MinWidth="180" FontSize="12" Padding="6,3" VerticalAlignment="Center"/>
+                                    <ComboBox SelectedItem="{Binding SiteViewModel.NewPermissionRights}" MinWidth="140" FontSize="12" Padding="6,3">
+                                        <ComboBoxItem Content="FullControl"/>
+                                        <ComboBoxItem Content="Modify"/>
+                                        <ComboBoxItem Content="ReadAndExecute"/>
+                                        <ComboBoxItem Content="Read"/>
+                                        <ComboBoxItem Content="Write"/>
+                                        <ComboBoxItem Content="ListDirectory"/>
+                                    </ComboBox>
+                                    <ComboBox SelectedItem="{Binding SiteViewModel.NewPermissionType}" MinWidth="80" FontSize="12" Padding="6,3">
+                                        <ComboBoxItem Content="Allow"/>
+                                        <ComboBoxItem Content="Deny"/>
+                                    </ComboBox>
+                                    <Button Command="{Binding SiteViewModel.AddPermissionCmd}"
+                                            ToolTip.Tip="Add permission"
+                                            Padding="10,5" CornerRadius="4" Background="#1B5E20" Foreground="White">
+                                        <StackPanel Orientation="Horizontal" Spacing="6">
+                                            <avalonia:Icon Value="fa-solid fa-plus" FontSize="12"/>
+                                            <TextBlock Text="Add" VerticalAlignment="Center" FontSize="12"/>
+                                        </StackPanel>
+                                    </Button>
+                                </StackPanel>
+                            </Border>
+                            <DataGrid ItemsSource="{Binding SiteViewModel.SelectedSite.Permissions}"
+                                      AutoGenerateColumns="False"
+                                      IsReadOnly="True"
+                                      HeadersVisibility="Column"
+                                      GridLinesVisibility="Horizontal"
+                                      CanUserResizeColumns="True"
+                                      CanUserSortColumns="True">
+                                <DataGrid.Columns>
+                                    <DataGridTextColumn Header="Identity" Binding="{Binding Identity}" Width="*"/>
+                                    <DataGridTextColumn Header="Rights" Binding="{Binding Rights}" Width="*"/>
+                                    <DataGridTextColumn Header="Type" Binding="{Binding AccessType}" Width="80"/>
+                                    <DataGridCheckBoxColumn Header="Inherited" Binding="{Binding IsInherited}" Width="80"/>
+                                    <DataGridTemplateColumn Header="" Width="60">
+                                        <DataGridTemplateColumn.CellTemplate>
+                                            <DataTemplate x:DataType="models:FolderPermissionEntry">
+                                                <Button Command="{Binding #SitesList.((vm:MainWindowViewModel)DataContext).SiteViewModel.RemovePermissionCmd}"
+                                                        CommandParameter="{Binding Identity}"
+                                                        IsVisible="{Binding !IsInherited}"
+                                                        ToolTip.Tip="Remove this permission"
+                                                        Padding="4,2" Background="Transparent" CornerRadius="3">
+                                                    <avalonia:Icon Value="fa-solid fa-trash" FontSize="10" Foreground="#EF5350"/>
+                                                </Button>
+                                            </DataTemplate>
+                                        </DataGridTemplateColumn.CellTemplate>
+                                    </DataGridTemplateColumn>
+                                </DataGrid.Columns>
+                            </DataGrid>
+                        </DockPanel>
+                    </TabItem>
+
                     <!-- Logs tab -->
                     <TabItem Header="Logs">
                         <Grid RowDefinitions="Auto,*">
@@ -751,6 +823,38 @@
                                                     <behaviours:DocumentTextBindingBehavior Text="{Binding SiteViewModel.SiteResponse.RawHtml, Mode=OneWay}"/>
                                                 </Interaction.Behaviors>
                                             </avaloniaEdit:TextEditor>
+                                        </Border>
+                                    </StackPanel>
+
+                                    <!-- JS Console -->
+                                    <StackPanel Spacing="4">
+                                        <StackPanel Orientation="Horizontal" Spacing="8">
+                                            <TextBlock Text="JS Console" FontWeight="Bold" FontSize="16"/>
+                                            <Button Command="{Binding SiteViewModel.CaptureJsConsoleCmd}"
+                                                    ToolTip.Tip="Run page in headless browser and capture console output"
+                                                    Padding="8,4" CornerRadius="4">
+                                                <StackPanel Orientation="Horizontal" Spacing="6">
+                                                    <avalonia:Icon Value="fa-solid fa-terminal" FontSize="11"/>
+                                                    <TextBlock Text="Capture" VerticalAlignment="Center" FontSize="11"/>
+                                                </StackPanel>
+                                            </Button>
+                                            <TextBlock Text="Loading browser..." FontSize="11" Opacity="0.6" VerticalAlignment="Center"
+                                                       IsVisible="{Binding SiteViewModel.IsLoadingConsole}"/>
+                                        </StackPanel>
+                                        <Border BorderBrush="{DynamicResource SystemControlForegroundBaseMediumBrush}"
+                                                BorderThickness="1" CornerRadius="4">
+                                            <DataGrid ItemsSource="{Binding SiteViewModel.JsConsoleMessages}"
+                                                      AutoGenerateColumns="False"
+                                                      IsReadOnly="True"
+                                                      HeadersVisibility="Column"
+                                                      GridLinesVisibility="Horizontal"
+                                                      MaxHeight="200">
+                                                <DataGrid.Columns>
+                                                    <DataGridTextColumn Header="Time" Binding="{Binding Timestamp, StringFormat='{}{0:HH:mm:ss.fff}'}" Width="90"/>
+                                                    <DataGridTextColumn Header="Level" Binding="{Binding Level}" Width="70"/>
+                                                    <DataGridTextColumn Header="Message" Binding="{Binding Text}" Width="*"/>
+                                                </DataGrid.Columns>
+                                            </DataGrid>
                                         </Border>
                                     </StackPanel>
                                 </StackPanel>

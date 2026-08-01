@@ -5,6 +5,8 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
+using System.Security.AccessControl;
+using System.Security.Principal;
 using System.Threading.Tasks;
 using System.Windows.Input;
 using System.Xml.Linq;
@@ -14,6 +16,7 @@ using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Input.Platform;
 using CommunityToolkit.Mvvm.ComponentModel;
 using Microsoft.Web.Administration;
+using PuppeteerSharp;
 using ReactiveUI;
 using TomLabs.IISBlitz.App.Models;
 
@@ -84,6 +87,21 @@ public partial class SiteViewModel : ObservableObject
     [ObservableProperty]
     private bool _isLoadingResponse;
 
+    [ObservableProperty]
+    private ObservableCollection<JsConsoleMessage> _jsConsoleMessages = new();
+
+    [ObservableProperty]
+    private bool _isLoadingConsole;
+
+    [ObservableProperty]
+    private string _newPermissionIdentity = string.Empty;
+
+    [ObservableProperty]
+    private string _newPermissionRights = "ReadAndExecute";
+
+    [ObservableProperty]
+    private string _newPermissionType = "Allow";
+
     private SiteInfo? _selectedSite;
     public SiteInfo? SelectedSite
     {
@@ -131,6 +149,10 @@ public partial class SiteViewModel : ObservableObject
     public ICommand FilterEventLogCmd { get; }
     public ICommand RunHealthCheckSeriesCmd { get; }
     public ICommand FetchSiteResponseCmd { get; }
+    public ICommand LoadPermissionsCmd { get; }
+    public ICommand AddPermissionCmd { get; }
+    public ICommand RemovePermissionCmd { get; }
+    public ICommand CaptureJsConsoleCmd { get; }
 
     public SiteViewModel()
     {
@@ -166,6 +188,10 @@ public partial class SiteViewModel : ObservableObject
         FilterEventLogCmd = ReactiveCommand.Create<string?>(FilterEventLog);
         RunHealthCheckSeriesCmd = ReactiveCommand.Create(RunHealthCheckSeries);
         FetchSiteResponseCmd = ReactiveCommand.Create(FetchSiteResponse);
+        LoadPermissionsCmd = ReactiveCommand.Create(LoadPermissions);
+        AddPermissionCmd = ReactiveCommand.Create(AddPermission);
+        RemovePermissionCmd = ReactiveCommand.Create<string?>(RemovePermission);
+        CaptureJsConsoleCmd = ReactiveCommand.Create(CaptureJsConsole);
 
         _serverManager = new ServerManager();
         LoadIISSites();
@@ -207,6 +233,7 @@ public partial class SiteViewModel : ObservableObject
         ResponseTimeValues = new List<double>();
         EventLogEntries = new ObservableCollection<EventLogItem>();
         SiteResponse = null;
+        JsConsoleMessages = new ObservableCollection<JsConsoleMessage>();
         LogSearchText = string.Empty;
         LogSearchStatus = string.Empty;
         LogSearchResults = new ObservableCollection<LogSearchResult>();
@@ -1087,6 +1114,7 @@ public partial class SiteViewModel : ObservableObject
 
         LoadCertificates();
         LoadWorkerProcesses();
+        LoadPermissions();
     }
 
     private void LoadCertificates()
@@ -1133,6 +1161,159 @@ public partial class SiteViewModel : ObservableObject
         catch (Exception ex)
         {
             Console.WriteLine($"Failed to load certificates: {ex.Message}");
+        }
+    }
+
+    private void LoadPermissions()
+    {
+        if (SelectedSite == null) return;
+        try
+        {
+            var dirInfo = new DirectoryInfo(SelectedSite.PhysicalPath);
+            var acl = dirInfo.GetAccessControl();
+            var rules = acl.GetAccessRules(true, true, typeof(NTAccount));
+            var permissions = new ObservableCollection<FolderPermissionEntry>();
+
+            foreach (FileSystemAccessRule rule in rules)
+            {
+                permissions.Add(new FolderPermissionEntry(
+                    rule.IdentityReference.Value,
+                    rule.FileSystemRights.ToString(),
+                    rule.AccessControlType.ToString(),
+                    rule.IsInherited));
+            }
+
+            SelectedSite.Permissions = permissions;
+        }
+        catch (Exception ex)
+        {
+            SelectedSite.Permissions = new ObservableCollection<FolderPermissionEntry>(
+                [new FolderPermissionEntry($"Error: {ex.Message}", "", "", false)]);
+        }
+    }
+
+    private void AddPermission()
+    {
+        if (SelectedSite == null || string.IsNullOrWhiteSpace(NewPermissionIdentity)) return;
+        try
+        {
+            var dirInfo = new DirectoryInfo(SelectedSite.PhysicalPath);
+            var acl = dirInfo.GetAccessControl();
+
+            var rights = NewPermissionRights switch
+            {
+                "FullControl" => FileSystemRights.FullControl,
+                "Modify" => FileSystemRights.Modify,
+                "ReadAndExecute" => FileSystemRights.ReadAndExecute,
+                "Read" => FileSystemRights.Read,
+                "Write" => FileSystemRights.Write,
+                "ListDirectory" => FileSystemRights.ListDirectory,
+                _ => FileSystemRights.ReadAndExecute
+            };
+
+            var accessType = NewPermissionType == "Deny"
+                ? AccessControlType.Deny
+                : AccessControlType.Allow;
+
+            var rule = new FileSystemAccessRule(
+                new NTAccount(NewPermissionIdentity),
+                rights,
+                InheritanceFlags.ContainerInherit | InheritanceFlags.ObjectInherit,
+                PropagationFlags.None,
+                accessType);
+
+            acl.AddAccessRule(rule);
+            dirInfo.SetAccessControl(acl);
+
+            NewPermissionIdentity = string.Empty;
+            LoadPermissions();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Failed to add permission: {ex.Message}");
+        }
+    }
+
+    private void RemovePermission(string? identity)
+    {
+        if (SelectedSite == null || string.IsNullOrEmpty(identity)) return;
+        try
+        {
+            var dirInfo = new DirectoryInfo(SelectedSite.PhysicalPath);
+            var acl = dirInfo.GetAccessControl();
+            var rules = acl.GetAccessRules(true, false, typeof(NTAccount));
+
+            foreach (FileSystemAccessRule rule in rules)
+            {
+                if (rule.IdentityReference.Value.Equals(identity, StringComparison.OrdinalIgnoreCase)
+                    && !rule.IsInherited)
+                {
+                    acl.RemoveAccessRule(rule);
+                }
+            }
+
+            dirInfo.SetAccessControl(acl);
+            LoadPermissions();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Failed to remove permission: {ex.Message}");
+        }
+    }
+
+    private async void CaptureJsConsole()
+    {
+        if (SelectedSite?.Url == null) return;
+
+        IsLoadingConsole = true;
+        JsConsoleMessages = new ObservableCollection<JsConsoleMessage>();
+
+        try
+        {
+            var browserFetcher = new BrowserFetcher();
+            await browserFetcher.DownloadAsync();
+
+            await using var browser = await Puppeteer.LaunchAsync(new LaunchOptions
+            {
+                Headless = true,
+                Args = new[] { "--no-sandbox", "--ignore-certificate-errors" }
+            });
+
+            await using var page = await browser.NewPageAsync();
+
+            var messages = new List<JsConsoleMessage>();
+            page.Console += (_, e) =>
+            {
+                messages.Add(new JsConsoleMessage(
+                    DateTime.Now,
+                    e.Message.Type.ToString(),
+                    e.Message.Text));
+            };
+
+            page.PageError += (_, e) =>
+            {
+                messages.Add(new JsConsoleMessage(DateTime.Now, "Error", e.Message));
+            };
+
+            await page.GoToAsync(SelectedSite.Url, new NavigationOptions
+            {
+                WaitUntil = new[] { WaitUntilNavigation.Load },
+                Timeout = 15000
+            });
+
+            // Wait a bit for async scripts
+            await Task.Delay(2000);
+
+            JsConsoleMessages = new ObservableCollection<JsConsoleMessage>(messages);
+        }
+        catch (Exception ex)
+        {
+            JsConsoleMessages = new ObservableCollection<JsConsoleMessage>(
+                [new JsConsoleMessage(DateTime.Now, "Error", $"Failed: {ex.Message}")]);
+        }
+        finally
+        {
+            IsLoadingConsole = false;
         }
     }
 }
