@@ -25,14 +25,8 @@ jobs:
           dotnet-version: '9.0.x'
 
       - name: Publish
-        run: |
-          dotnet publish src/TomLabs.IISBlitz.App/TomLabs.IISBlitz.App.csproj `
-            -c Release `
-            -r ${{ matrix.runtime }} `
-            --self-contained true `
-            -p:PublishSingleFile=true `
-            -p:IncludeNativeLibrariesForSelfExtract=true `
-            -o publish/${{ matrix.runtime }}
+        # Single-file, trimming and compression settings live in the csproj (Release configuration).
+        run: dotnet publish src/TomLabs.IISBlitz.App/TomLabs.IISBlitz.App.csproj -c Release -r ${{ matrix.runtime }} -o publish/${{ matrix.runtime }}
 
       - name: Zip artifact
         run: Compress-Archive -Path publish/${{ matrix.runtime }}/* -DestinationPath IISBlitz-${{ matrix.runtime }}.zip

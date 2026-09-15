@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
     <PropertyGroup>
         <OutputType>WinExe</OutputType>
         <TargetFramework>net9.0</TargetFramework>
@@ -9,12 +9,27 @@
         <Title>IISBlitz</Title>
         <Authors>Tomas Bouda</Authors>
         <ApplicationIcon>Assets\lightning.ico</ApplicationIcon>
-        <Version>0.4.0</Version>
+        <VersionPrefix>0.5.0</VersionPrefix>
         <NoWarn>CA1416</NoWarn>
     </PropertyGroup>
+
+    <!-- Publish settings: self-contained single-file exe kept small by compression and trimming.
+         Partial trim mode only trims assemblies that declare themselves trimmable (framework, Avalonia);
+         third-party libraries relying on reflection (ReactiveUI, Microsoft.Web.Administration, PuppeteerSharp)
+         are kept whole. Trim analysis warnings coming from those libraries are suppressed on purpose. -->
+    <PropertyGroup Condition="'$(Configuration)' == 'Release'">
+        <RuntimeIdentifier Condition="'$(RuntimeIdentifier)' == ''">win-x64</RuntimeIdentifier>
+        <SelfContained>true</SelfContained>
+        <PublishSingleFile>true</PublishSingleFile>
+        <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+        <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
+        <PublishTrimmed>true</PublishTrimmed>
+        <TrimMode>partial</TrimMode>
+        <SuppressTrimAnalysisWarnings>true</SuppressTrimAnalysisWarnings>
+        <DebugType>none</DebugType>
+        <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
+    </PropertyGroup>
     <ItemGroup>
-        <Folder Include="Converters\" />
-        <Folder Include="Models\" />
         <AvaloniaResource Include="Assets\**" />
         <None Remove=".gitignore" />
     </ItemGroup>
@@ -26,7 +41,6 @@
         <PackageReference Include="Avalonia.Controls.DataGrid" Version="11.3.13" />
         <PackageReference Include="Avalonia.Desktop" Version="11.3.18" />
         <PackageReference Include="Avalonia.Themes.Fluent" Version="11.3.18" />
-        <PackageReference Include="Avalonia.Fonts.Inter" Version="11.3.18" />
         <PackageReference Include="Avalonia.ReactiveUI" Version="11.3.8" />
         <!--Condition below is needed to remove Avalonia.Diagnostics package from build output in Release configuration.-->
         <PackageReference Include="Avalonia.Diagnostics" Version="11.3.18">
@@ -35,7 +49,6 @@
         </PackageReference>
         <PackageReference Include="Avalonia.Xaml.Interactivity" Version="11.3.0.6" />
         <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
-        <PackageReference Include="MessageBox.Avalonia" Version="3.2.0" />
         <PackageReference Include="Microsoft.Web.Administration" Version="11.1.0" />
         <PackageReference Include="System.Diagnostics.EventLog" Version="9.0.0" />
         <PackageReference Include="PuppeteerSharp" Version="20.0.5" />
