@@ -9,7 +9,7 @@
         <Title>IISBlitz</Title>
         <Authors>Tomas Bouda</Authors>
         <ApplicationIcon>Assets\lightning.ico</ApplicationIcon>
-        <VersionPrefix>0.5.0</VersionPrefix>
+        <VersionPrefix>0.6.0</VersionPrefix>
         <NoWarn>CA1416</NoWarn>
     </PropertyGroup>
 
@@ -28,6 +28,7 @@
         <SuppressTrimAnalysisWarnings>true</SuppressTrimAnalysisWarnings>
         <DebugType>none</DebugType>
         <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
+        <PublishReferencesDocumentationFiles>false</PublishReferencesDocumentationFiles>
     </PropertyGroup>
     <ItemGroup>
         <AvaloniaResource Include="Assets\**" />
@@ -54,5 +55,10 @@
         <PackageReference Include="PuppeteerSharp" Version="20.0.5" />
         <PackageReference Include="Projektanker.Icons.Avalonia" Version="9.6.2" />
         <PackageReference Include="Projektanker.Icons.Avalonia.FontAwesome" Version="9.6.2" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <!-- Shared self-update library (git submodule, see lib/). -->
+        <ProjectReference Include="..\..\lib\TomLabs.AutoUpdate\src\TomLabs.AutoUpdate.Avalonia\TomLabs.AutoUpdate.Avalonia.csproj" />
     </ItemGroup>
 </Project>

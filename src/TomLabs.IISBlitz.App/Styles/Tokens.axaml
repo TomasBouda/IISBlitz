@@ -89,6 +89,14 @@
     <SolidColorBrush x:Key="StoppedBrush" Color="{DynamicResource StoppedColor}"/>
     <SolidColorBrush x:Key="ScrimBrush" Color="{DynamicResource ScrimColor}"/>
 
+    <!-- Update banner (TomLabs.AutoUpdate.Avalonia) painted with the same tokens. -->
+    <SolidColorBrush x:Key="UpdateBannerBackground" Color="{DynamicResource PanelColor}"/>
+    <SolidColorBrush x:Key="UpdateBannerBorder" Color="{DynamicResource HairlineStrongColor}"/>
+    <SolidColorBrush x:Key="UpdateBannerForeground" Color="{DynamicResource TextSecondaryColor}"/>
+    <SolidColorBrush x:Key="UpdateBannerAccent" Color="{DynamicResource AccentColor}"/>
+    <SolidColorBrush x:Key="UpdateBannerAccentSoft" Color="{DynamicResource AccentSoftColor}"/>
+    <SolidColorBrush x:Key="UpdateBannerError" Color="{DynamicResource ErrorColor}"/>
+
     <!-- The bolt keeps its amber in both themes: it is the logo, not a text colour. -->
     <SolidColorBrush x:Key="BoltBrush" Color="#F5B400"/>
 

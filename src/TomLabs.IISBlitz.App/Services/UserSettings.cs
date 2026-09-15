@@ -22,6 +22,9 @@ public sealed class UserSettings
     /// <summary>"Dark" or "Light"; null follows the operating system preference.</summary>
     public string? Theme { get; set; }
 
+    /// <summary>"Stable" or "Nightly"; null follows the channel of the running build.</summary>
+    public string? UpdateChannel { get; set; }
+
     public static UserSettings Load()
     {
         try

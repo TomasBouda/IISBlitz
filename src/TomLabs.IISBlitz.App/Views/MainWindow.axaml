@@ -9,6 +9,7 @@
         xmlns:models="clr-namespace:TomLabs.IISBlitz.App.Models"
         xmlns:controls="clr-namespace:TomLabs.IISBlitz.App.Controls"
         xmlns:converters="clr-namespace:TomLabs.IISBlitz.App.Converters"
+        xmlns:update="clr-namespace:TomLabs.AutoUpdate.Avalonia;assembly=TomLabs.AutoUpdate.Avalonia"
         mc:Ignorable="d" d:DesignWidth="1180" d:DesignHeight="740"
         x:Class="TomLabs.IISBlitz.App.Views.MainWindow"
         x:DataType="vm:MainWindowViewModel"
@@ -715,7 +716,7 @@
 
             <!-- ===== Status bar ===== -->
             <Border Grid.Row="2" Classes="hairline-t" Padding="18,6">
-                <Grid ColumnDefinitions="Auto,*,Auto,16,Auto">
+                <Grid ColumnDefinitions="Auto,16,Auto,*,Auto,16,Auto">
                     <TextBlock Grid.Column="0" Classes="muted" FontSize="11" VerticalAlignment="Center">
                         <TextBlock.Text>
                             <MultiBinding StringFormat="{}{0} sites · {1} running">
@@ -724,8 +725,9 @@
                             </MultiBinding>
                         </TextBlock.Text>
                     </TextBlock>
-                    <TextBlock Grid.Column="2" Classes="mono accent" FontSize="11" Text="{Binding SiteViewModel.HealthCheckResult}" VerticalAlignment="Center"/>
-                    <TextBlock Grid.Column="4" Classes="mono muted" FontSize="11" Text="{Binding SiteViewModel.StatusText}" VerticalAlignment="Center"/>
+                    <update:UpdateBanner Grid.Column="2" VerticalAlignment="Center"/>
+                    <TextBlock Grid.Column="4" Classes="mono accent" FontSize="11" Text="{Binding SiteViewModel.HealthCheckResult}" VerticalAlignment="Center"/>
+                    <TextBlock Grid.Column="6" Classes="mono muted" FontSize="11" Text="{Binding SiteViewModel.StatusText}" VerticalAlignment="Center"/>
                 </Grid>
             </Border>
         </Grid>

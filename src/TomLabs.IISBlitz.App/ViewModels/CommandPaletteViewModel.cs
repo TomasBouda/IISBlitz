@@ -115,6 +115,15 @@ public partial class CommandPaletteViewModel : ObservableObject
 
         _all.Add(new PaletteItem("App", "fa-solid fa-arrows-rotate", "Refresh sites", "reload from IIS", "F5", () => vm.RefreshSitesCmd.Execute(null)));
         _all.Add(new PaletteItem("App", "fa-solid fa-circle-half-stroke", "Toggle light / dark", "remembered for next start", "Ctrl+Shift+L", () => vm.ToggleThemeCmd.Execute(null)));
+
+        if (TomLabs.AutoUpdate.Updater.Current is { } updater)
+        {
+            var build = $"{updater.Build.Version} · {updater.Channel.ToString().ToLowerInvariant()} channel";
+            _all.Add(new PaletteItem("App", "fa-solid fa-cloud-arrow-down", "Check for updates", build, "", () => _ = updater.CheckAsync()));
+            var other = updater.Channel == TomLabs.AutoUpdate.UpdateChannel.Stable ? TomLabs.AutoUpdate.UpdateChannel.Nightly : TomLabs.AutoUpdate.UpdateChannel.Stable;
+            _all.Add(new PaletteItem("App", "fa-solid fa-code-branch", $"Switch to {other.ToString().ToLowerInvariant()} updates",
+                other == TomLabs.AutoUpdate.UpdateChannel.Nightly ? "latest commit on master" : "tagged releases only", "", () => updater.Channel = other));
+        }
     }
 
     private void Filter()

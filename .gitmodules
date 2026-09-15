@@ -1,0 +1,3 @@
+[submodule "TomLabs.AutoUpdate"]
+	path = lib/TomLabs.AutoUpdate
+	url = https://github.com/TomasBouda/TomLabs.AutoUpdate.git

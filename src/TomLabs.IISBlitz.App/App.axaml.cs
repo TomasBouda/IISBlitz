@@ -42,6 +42,8 @@ public partial class App : Application
 
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
+            StartUpdater(desktop);
+
             // Avoid duplicate validations from both Avalonia and the CommunityToolkit. 
             // More info: https://docs.avaloniaui.net/docs/guides/development-guides/data-validation#manage-validationplugins
             DisableAvaloniaDataAnnotationValidation();
@@ -70,6 +72,31 @@ public partial class App : Application
         base.OnFrameworkInitializationCompleted();
     }
     
+    /// <summary>Self-update from GitHub Releases: nightly builds follow the nightly pre-release, releases follow stable.</summary>
+    private static void StartUpdater(IClassicDesktopStyleApplicationLifetime desktop)
+    {
+        var settings = Services.UserSettings.Load();
+
+        // IISBLITZ_UPDATE_MANIFEST=https://host/latest.json points the updater at a test manifest instead of GitHub.
+        var manifestOverride = Environment.GetEnvironmentVariable("IISBLITZ_UPDATE_MANIFEST");
+        TomLabs.AutoUpdate.IUpdateSource source = Uri.TryCreate(manifestOverride, UriKind.Absolute, out var manifestUri)
+            ? new TomLabs.AutoUpdate.ManifestSource(manifestUri)
+            : new TomLabs.AutoUpdate.GitHubReleasesSource("TomasBouda", "IISBlitz");
+
+        TomLabs.AutoUpdate.Updater.Start(new TomLabs.AutoUpdate.UpdateOptions("IISBlitz", source)
+        {
+            Channel = Enum.TryParse<TomLabs.AutoUpdate.UpdateChannel>(settings.UpdateChannel, out var channel) ? channel : null,
+            ChannelChanged = ch =>
+            {
+                var s = Services.UserSettings.Load();
+                s.UpdateChannel = ch.ToString();
+                s.Save();
+            },
+            ExitApplication = () => desktop.Shutdown(),
+            Log = message => Console.Error.WriteLine(message),
+        });
+    }
+
     private static bool IsRunningAsAdministrator()
     {
         // Only check if we're on Windows
