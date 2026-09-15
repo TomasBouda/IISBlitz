@@ -15,7 +15,6 @@
 
     <!-- Publish settings: self-contained single-file exe kept small by compression and trimming.
          Partial trim mode only trims assemblies that declare themselves trimmable (framework, Avalonia);
-         third-party libraries relying on reflection (ReactiveUI, Microsoft.Web.Administration, PuppeteerSharp)
          are kept whole. Trim analysis warnings coming from those libraries are suppressed on purpose. -->
     <PropertyGroup Condition="'$(Configuration)' == 'Release'">
         <RuntimeIdentifier Condition="'$(RuntimeIdentifier)' == ''">win-x64</RuntimeIdentifier>
@@ -52,7 +51,6 @@
         <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
         <PackageReference Include="Microsoft.Web.Administration" Version="11.1.0" />
         <PackageReference Include="System.Diagnostics.EventLog" Version="9.0.0" />
-        <PackageReference Include="PuppeteerSharp" Version="20.0.5" />
         <PackageReference Include="Projektanker.Icons.Avalonia" Version="9.6.2" />
         <PackageReference Include="Projektanker.Icons.Avalonia.FontAwesome" Version="9.6.2" />
     </ItemGroup>

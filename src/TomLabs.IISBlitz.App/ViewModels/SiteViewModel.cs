@@ -16,7 +16,6 @@ using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Input.Platform;
 using CommunityToolkit.Mvvm.ComponentModel;
 using Microsoft.Web.Administration;
-using PuppeteerSharp;
 using ReactiveUI;
 using TomLabs.IISBlitz.App.Models;
 
@@ -80,18 +79,6 @@ public partial class SiteViewModel : ObservableObject
 
     [ObservableProperty]
     private string _eventLogFilter = "All";
-
-    [ObservableProperty]
-    private SiteResponseInfo? _siteResponse;
-
-    [ObservableProperty]
-    private bool _isLoadingResponse;
-
-    [ObservableProperty]
-    private ObservableCollection<JsConsoleMessage> _jsConsoleMessages = new();
-
-    [ObservableProperty]
-    private bool _isLoadingConsole;
 
     [ObservableProperty]
     private string _newPermissionIdentity = string.Empty;
@@ -193,11 +180,9 @@ public partial class SiteViewModel : ObservableObject
     public ICommand LoadEventLogCmd { get; }
     public ICommand FilterEventLogCmd { get; }
     public ICommand RunHealthCheckSeriesCmd { get; }
-    public ICommand FetchSiteResponseCmd { get; }
     public ICommand LoadPermissionsCmd { get; }
     public ICommand AddPermissionCmd { get; }
     public ICommand RemovePermissionCmd { get; }
-    public ICommand CaptureJsConsoleCmd { get; }
 
     public SiteViewModel()
     {
@@ -232,11 +217,9 @@ public partial class SiteViewModel : ObservableObject
         LoadEventLogCmd = ReactiveCommand.Create(LoadEventLog);
         FilterEventLogCmd = ReactiveCommand.Create<string?>(FilterEventLog);
         RunHealthCheckSeriesCmd = ReactiveCommand.Create(RunHealthCheckSeries);
-        FetchSiteResponseCmd = ReactiveCommand.Create(FetchSiteResponse);
         LoadPermissionsCmd = ReactiveCommand.Create(LoadPermissions);
         AddPermissionCmd = ReactiveCommand.Create(AddPermission);
         RemovePermissionCmd = ReactiveCommand.Create<string?>(RemovePermission);
-        CaptureJsConsoleCmd = ReactiveCommand.Create(CaptureJsConsole);
 
         _serverManager = new ServerManager();
         LoadIISSites();
@@ -388,8 +371,6 @@ public partial class SiteViewModel : ObservableObject
         HealthCheckHistory = new ObservableCollection<HealthCheckEntry>();
         ResponseTimeValues = new List<double>();
         EventLogEntries = new ObservableCollection<EventLogItem>();
-        SiteResponse = null;
-        JsConsoleMessages = new ObservableCollection<JsConsoleMessage>();
         LogSearchText = string.Empty;
         LogSearchStatus = string.Empty;
         LogSearchResults = new ObservableCollection<LogSearchResult>();
@@ -809,98 +790,6 @@ public partial class SiteViewModel : ObservableObject
         {
             IsPinging = false;
         }
-    }
-
-    private async void FetchSiteResponse()
-    {
-        if (SelectedSite?.Url == null)
-        {
-            SiteResponse = null;
-            return;
-        }
-
-        IsLoadingResponse = true;
-        try
-        {
-            using var handler = new HttpClientHandler
-            {
-                ServerCertificateCustomValidationCallback = (_, _, _, _) => true,
-                AllowAutoRedirect = true
-            };
-            using var client = new HttpClient(handler) { Timeout = TimeSpan.FromSeconds(15) };
-            client.DefaultRequestHeaders.Add("User-Agent", "IISBlitz/0.3");
-
-            var sw = Stopwatch.StartNew();
-            var response = await client.GetAsync(SelectedSite.Url);
-            var body = await response.Content.ReadAsStringAsync();
-            sw.Stop();
-
-            var headers = new List<HttpHeaderItem>();
-            foreach (var h in response.Headers)
-                headers.Add(new HttpHeaderItem(h.Key, string.Join("; ", h.Value)));
-            foreach (var h in response.Content.Headers)
-                headers.Add(new HttpHeaderItem(h.Key, string.Join("; ", h.Value)));
-
-            // Parse meta tags from HTML
-            var title = ExtractBetween(body, "<title>", "</title>") ?? "";
-            var metaDesc = ExtractMetaContent(body, "description") ?? "";
-            var metaGen = ExtractMetaContent(body, "generator") ?? "";
-
-            var server = response.Headers.TryGetValues("Server", out var sv)
-                ? string.Join(", ", sv) : "";
-            var poweredBy = response.Headers.TryGetValues("X-Powered-By", out var xp)
-                ? string.Join(", ", xp) : "";
-
-            SiteResponse = new SiteResponseInfo
-            {
-                StatusCode = (int)response.StatusCode,
-                StatusDescription = response.StatusCode.ToString(),
-                ResponseTimeMs = sw.ElapsedMilliseconds,
-                ContentLength = body.Length,
-                ContentType = response.Content.Headers.ContentType?.ToString() ?? "",
-                Server = server,
-                PoweredBy = poweredBy,
-                PageTitle = title,
-                MetaDescription = metaDesc,
-                MetaGenerator = metaGen,
-                Headers = headers,
-                RawHtml = body.Length > 50000 ? body[..50000] + "\n... (truncated)" : body
-            };
-        }
-        catch (Exception ex)
-        {
-            SiteResponse = new SiteResponseInfo
-            {
-                StatusCode = -1,
-                StatusDescription = $"Error: {ex.Message}",
-                RawHtml = ex.ToString()
-            };
-        }
-        finally
-        {
-            IsLoadingResponse = false;
-        }
-    }
-
-    private static string? ExtractBetween(string html, string start, string end)
-    {
-        var s = html.IndexOf(start, StringComparison.OrdinalIgnoreCase);
-        if (s < 0) return null;
-        s += start.Length;
-        var e = html.IndexOf(end, s, StringComparison.OrdinalIgnoreCase);
-        return e < 0 ? null : html[s..e].Trim();
-    }
-
-    private static string? ExtractMetaContent(string html, string name)
-    {
-        var pattern = $"<meta[^>]*name=[\"']{name}[\"'][^>]*content=[\"']([^\"']*)[\"']";
-        var match = System.Text.RegularExpressions.Regex.Match(html, pattern, System.Text.RegularExpressions.RegexOptions.IgnoreCase);
-        if (match.Success) return match.Groups[1].Value;
-
-        // Try reversed order (content before name)
-        pattern = $"<meta[^>]*content=[\"']([^\"']*)[\"'][^>]*name=[\"']{name}[\"']";
-        match = System.Text.RegularExpressions.Regex.Match(html, pattern, System.Text.RegularExpressions.RegexOptions.IgnoreCase);
-        return match.Success ? match.Groups[1].Value : null;
     }
 
     private void LoadWorkerProcesses()
@@ -1440,62 +1329,6 @@ public partial class SiteViewModel : ObservableObject
         catch (Exception ex)
         {
             Console.WriteLine($"Failed to remove permission: {ex.Message}");
-        }
-    }
-
-    private async void CaptureJsConsole()
-    {
-        if (SelectedSite?.Url == null) return;
-
-        IsLoadingConsole = true;
-        JsConsoleMessages = new ObservableCollection<JsConsoleMessage>();
-
-        try
-        {
-            var browserFetcher = new BrowserFetcher();
-            await browserFetcher.DownloadAsync();
-
-            await using var browser = await Puppeteer.LaunchAsync(new LaunchOptions
-            {
-                Headless = true,
-                Args = new[] { "--no-sandbox", "--ignore-certificate-errors" }
-            });
-
-            await using var page = await browser.NewPageAsync();
-
-            var messages = new List<JsConsoleMessage>();
-            page.Console += (_, e) =>
-            {
-                messages.Add(new JsConsoleMessage(
-                    DateTime.Now,
-                    e.Message.Type.ToString(),
-                    e.Message.Text));
-            };
-
-            page.PageError += (_, e) =>
-            {
-                messages.Add(new JsConsoleMessage(DateTime.Now, "Error", e.Message));
-            };
-
-            await page.GoToAsync(SelectedSite.Url, new NavigationOptions
-            {
-                WaitUntil = new[] { WaitUntilNavigation.Load },
-                Timeout = 15000
-            });
-
-            // Wait a bit for async scripts
-            await Task.Delay(2000);
-
-            JsConsoleMessages = new ObservableCollection<JsConsoleMessage>(messages);
-        }
-        catch (Exception ex)
-        {
-            JsConsoleMessages = new ObservableCollection<JsConsoleMessage>(
-                [new JsConsoleMessage(DateTime.Now, "Error", $"Failed: {ex.Message}")]);
-        }
-        finally
-        {
-            IsLoadingConsole = false;
         }
     }
 }

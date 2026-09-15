@@ -1,12 +1,12 @@
 # Changelog
 
-## 0.6.0 — unreleased
+## 0.6.0 — 2026-09-15
 
 - Added: in-app updates through TomLabs.AutoUpdate — the status bar offers "Update" when a newer build is
   on GitHub Releases (nightly builds follow the nightly pre-release, releases follow stable); the channel
   can be switched from the command palette.
 - Changed: releases and nightly builds are published by the shared workflow with an `update.json` manifest.
-- Removed: the Response tab (HTTP inspector and JS console capture).
+- Removed: the Response tab (HTTP inspector and JS console capture) together with the PuppeteerSharp dependency.
 - Fixed: the appsettings toolbar no longer claims web.config sets Production when ASPNETCORE_ENVIRONMENT is absent; it shows "not set → Production".
 
 ## 0.5.0 — 2026-09-15
