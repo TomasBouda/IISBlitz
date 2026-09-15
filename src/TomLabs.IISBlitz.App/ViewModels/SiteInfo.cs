@@ -65,5 +65,23 @@ public partial class SiteInfo : ObservableObject
         ? $"{b.Protocol}://{(string.IsNullOrEmpty(b.Host) ? "localhost" : b.Host)}:{b.Port}"
         : null;
 
+    /// <summary>Sidebar subtitle: bound ports followed by the app pool, e.g. ":80 :443 · DefaultAppPool".</summary>
+    public string Summary
+    {
+        get
+        {
+            var ports = string.Join(" ", Bindings.Select(b => $":{b.Port}").Distinct());
+            return string.IsNullOrEmpty(ports) ? AppPool : $"{ports} · {AppPool}";
+        }
+    }
+
+    partial void OnBindingsChanged(ObservableCollection<BindingInfo> value)
+    {
+        OnPropertyChanged(nameof(Summary));
+        OnPropertyChanged(nameof(Url));
+    }
+
+    partial void OnAppPoolChanged(string value) => OnPropertyChanged(nameof(Summary));
+
     public override string ToString() => Name;
 }

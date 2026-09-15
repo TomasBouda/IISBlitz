@@ -102,6 +102,43 @@ public partial class SiteViewModel : ObservableObject
     [ObservableProperty]
     private string _newPermissionType = "Allow";
 
+    /// <summary>True while a health check (single or series) is in flight; drives the sweep animation on the ping card.</summary>
+    [ObservableProperty]
+    private bool _isPinging;
+
+    /// <summary>Compact "200 · 38 ms" summary of the most recent ping for the overview card.</summary>
+    [ObservableProperty]
+    private string _lastPingText = "—";
+
+    /// <summary>Total working set of the selected site's worker processes, formatted for the overview card.</summary>
+    [ObservableProperty]
+    private string _workerMemoryText = "—";
+
+    [ObservableProperty]
+    private int _runningSiteCount;
+
+    [ObservableProperty]
+    private bool _isLoadingEvents;
+
+    [ObservableProperty]
+    private EventLogItem? _selectedEvent;
+
+    /// <summary>Result of probing GET {site}/health: null while probing or when no site is selected.</summary>
+    [ObservableProperty]
+    private bool? _hasHealthEndpoint;
+
+    [ObservableProperty]
+    private string _healthEndpointStatus = "—";
+
+    [ObservableProperty]
+    private string _healthEndpointDetail = string.Empty;
+
+    /// <summary>True while a site is being loaded; suppresses reactions to property churn during setup.</summary>
+    private bool _loadingSite;
+    private int _healthProbeVersion;
+
+    partial void OnEventLogFilterChanged(string value) => FilterEventLog(value);
+
     private SiteInfo? _selectedSite;
     public SiteInfo? SelectedSite
     {
@@ -110,11 +147,19 @@ public partial class SiteViewModel : ObservableObject
         {
             if (_selectedSite != value)
             {
+                if (_selectedSite != null)
+                    _selectedSite.PropertyChanged -= OnSelectedSitePropertyChanged;
+
                 _selectedSite = value;
                 OnPropertyChanged();
                 ClearSiteContext();
+
+                if (_selectedSite != null)
+                    _selectedSite.PropertyChanged += OnSelectedSitePropertyChanged;
+
                 LoadSiteDetails();
                 UpdateStatusText();
+                _ = ProbeHealthEndpointAsync();
             }
         }
     }
@@ -198,6 +243,97 @@ public partial class SiteViewModel : ObservableObject
         ApplyFilter();
     }
 
+    /// <summary>Picking an environment chip previews that environment's appsettings file; Apply writes web.config.</summary>
+    private void OnSelectedSitePropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        if (_loadingSite || e.PropertyName != nameof(SiteInfo.CurrentEnvironment)) return;
+        if (SelectedSite is { CurrentEnvironment: { Length: > 0 } env })
+            LoadAppSettingsForEnvironment(env);
+    }
+
+    private void LoadAppSettingsForEnvironment(string env)
+    {
+        if (SelectedSite == null) return;
+
+        var settingsFile = env.Equals("Production", StringComparison.OrdinalIgnoreCase)
+            ? "appsettings.json"
+            : $"appsettings.{env}.json";
+
+        SelectedSite.SelectedAppSettingsFile = settingsFile;
+        var settingsPath = Path.Combine(SelectedSite.PhysicalPath, settingsFile);
+        try
+        {
+            SelectedSite.AppSettingsContent = File.Exists(settingsPath)
+                ? File.ReadAllText(settingsPath)
+                : $"// File not found: {settingsFile}";
+        }
+        catch (Exception ex)
+        {
+            SelectedSite.AppSettingsContent = $"// Error reading {settingsFile}: {ex.Message}";
+        }
+    }
+
+    /// <summary>
+    /// Looks for the conventional GET /health endpoint and, when present, surfaces its status and version
+    /// on the overview so a deployed build can be identified at a glance.
+    /// </summary>
+    private async Task ProbeHealthEndpointAsync()
+    {
+        var version = ++_healthProbeVersion;
+        HasHealthEndpoint = null;
+        HealthEndpointStatus = "—";
+        HealthEndpointDetail = string.Empty;
+
+        var baseUrl = SelectedSite?.Url;
+        if (baseUrl == null)
+        {
+            HasHealthEndpoint = false;
+            HealthEndpointDetail = "no binding";
+            return;
+        }
+
+        try
+        {
+            using var handler = new HttpClientHandler { ServerCertificateCustomValidationCallback = (_, _, _, _) => true };
+            using var client = new HttpClient(handler) { Timeout = TimeSpan.FromSeconds(4) };
+            using var response = await client.GetAsync(baseUrl.TrimEnd('/') + "/health");
+            if (version != _healthProbeVersion) return;
+
+            if (!response.IsSuccessStatusCode)
+            {
+                HasHealthEndpoint = false;
+                HealthEndpointDetail = $"HTTP {(int)response.StatusCode}";
+                return;
+            }
+
+            var body = await response.Content.ReadAsStringAsync();
+            if (version != _healthProbeVersion) return;
+
+            HasHealthEndpoint = true;
+            try
+            {
+                using var json = System.Text.Json.JsonDocument.Parse(body);
+                var root = json.RootElement;
+                HealthEndpointStatus = root.TryGetProperty("status", out var st) ? st.ToString() : "OK";
+                var parts = new List<string>();
+                if (root.TryGetProperty("name", out var name)) parts.Add(name.ToString());
+                if (root.TryGetProperty("version", out var ver)) parts.Add("v" + ver.ToString().TrimStart('v'));
+                HealthEndpointDetail = parts.Count > 0 ? string.Join(" · ", parts) : "/health";
+            }
+            catch (System.Text.Json.JsonException)
+            {
+                HealthEndpointStatus = body.Trim().Length is > 0 and <= 40 ? body.Trim() : "OK";
+                HealthEndpointDetail = "/health (plain text)";
+            }
+        }
+        catch (Exception)
+        {
+            if (version != _healthProbeVersion) return;
+            HasHealthEndpoint = false;
+            HealthEndpointDetail = "unreachable";
+        }
+    }
+
     private void ApplyFilter()
     {
         var filtered = string.IsNullOrWhiteSpace(SearchText)
@@ -209,6 +345,7 @@ public partial class SiteViewModel : ObservableObject
 
         FilteredSiteList = filtered;
         TotalSiteCount = SiteList.Count;
+        RunningSiteCount = SiteList.Count(s => s.IsRunning);
         UpdateStatusText();
 
         // Preserve selection if still visible
@@ -229,6 +366,12 @@ public partial class SiteViewModel : ObservableObject
     {
         // Clear ViewModel-level state that doesn't belong to SiteInfo
         HealthCheckResult = string.Empty;
+        LastPingText = "—";
+        WorkerMemoryText = "—";
+        SelectedEvent = null;
+        HasHealthEndpoint = null;
+        HealthEndpointStatus = "—";
+        HealthEndpointDetail = string.Empty;
         HealthCheckHistory = new ObservableCollection<HealthCheckEntry>();
         ResponseTimeValues = new List<double>();
         EventLogEntries = new ObservableCollection<EventLogItem>();
@@ -466,17 +609,7 @@ public partial class SiteViewModel : ObservableObject
 
             // Reload web.config content in editor
             ReloadWebConfig();
-
-            // Load corresponding appsettings file
-            var settingsFile = env.Equals("Production", StringComparison.OrdinalIgnoreCase)
-                ? "appsettings.json"
-                : $"appsettings.{env}.json";
-
-            SelectedSite.SelectedAppSettingsFile = settingsFile;
-            var settingsPath = Path.Combine(SelectedSite.PhysicalPath, settingsFile);
-            SelectedSite.AppSettingsContent = File.Exists(settingsPath)
-                ? File.ReadAllText(settingsPath)
-                : $"// File not found: {settingsFile}";
+            LoadAppSettingsForEnvironment(env);
         }
         catch (Exception ex)
         {
@@ -500,81 +633,102 @@ public partial class SiteViewModel : ObservableObject
     private void ToggleTheme()
     {
         if (Avalonia.Application.Current == null) return;
-        var current = Avalonia.Application.Current.RequestedThemeVariant;
-        Avalonia.Application.Current.RequestedThemeVariant =
-            current == Avalonia.Styling.ThemeVariant.Dark
-                ? Avalonia.Styling.ThemeVariant.Light
-                : Avalonia.Styling.ThemeVariant.Dark;
+        var next = Avalonia.Application.Current.ActualThemeVariant == Avalonia.Styling.ThemeVariant.Dark
+            ? Avalonia.Styling.ThemeVariant.Light
+            : Avalonia.Styling.ThemeVariant.Dark;
+        Avalonia.Application.Current.RequestedThemeVariant = next;
+
+        var settings = Services.UserSettings.Load();
+        settings.Theme = next == Avalonia.Styling.ThemeVariant.Dark ? "Dark" : "Light";
+        settings.Save();
     }
 
-    private void LoadEventLog()
+    private static readonly string[] EventSourceHints =
+        { "IIS", "W3SVC", "WAS", "ASP.NET", "ASP.NET Core", ".NET Runtime", "IIS-W3SVC-WP", "IIS AspNetCore Module" };
+
+    private async void LoadEventLog()
     {
+        if (IsLoadingEvents) return;
+        IsLoadingEvents = true;
+        SelectedEvent = null;
+        var filter = EventLogFilter;
+
         try
         {
-            var entries = new ObservableCollection<EventLogItem>();
-            var sources = new[] { "IIS", "W3SVC", "WAS", "ASP.NET", "ASP.NET Core", ".NET Runtime", "IIS-W3SVC-WP" };
+            var items = await Task.Run(() => ReadRecentEvents(TimeSpan.FromHours(24)));
 
-            using var eventLog = new System.Diagnostics.EventLog("Application");
-            var recent = eventLog.Entries.Cast<System.Diagnostics.EventLogEntry>()
-                .Where(e => e.TimeGenerated > DateTime.Now.AddHours(-24))
-                .Where(e => sources.Any(s => e.Source.Contains(s, StringComparison.OrdinalIgnoreCase)))
-                .OrderByDescending(e => e.TimeGenerated)
-                .Take(100);
+            if (filter != "All")
+                items = items.Where(e => e.Level.Equals(filter, StringComparison.OrdinalIgnoreCase)).ToList();
 
-            foreach (var entry in recent)
-            {
-                var level = entry.EntryType switch
-                {
-                    System.Diagnostics.EventLogEntryType.Error => "Error",
-                    System.Diagnostics.EventLogEntryType.Warning => "Warning",
-                    System.Diagnostics.EventLogEntryType.Information => "Info",
-                    _ => entry.EntryType.ToString()
-                };
-                entries.Add(new EventLogItem(entry.TimeGenerated, level, entry.Source, entry.Message));
-            }
-
-            // Also check System log for W3SVC
-            using var systemLog = new System.Diagnostics.EventLog("System");
-            var systemRecent = systemLog.Entries.Cast<System.Diagnostics.EventLogEntry>()
-                .Where(e => e.TimeGenerated > DateTime.Now.AddHours(-24))
-                .Where(e => e.Source.Contains("W3SVC", StringComparison.OrdinalIgnoreCase)
-                          || e.Source.Contains("WAS", StringComparison.OrdinalIgnoreCase)
-                          || e.Source.Contains("IIS", StringComparison.OrdinalIgnoreCase))
-                .OrderByDescending(e => e.TimeGenerated)
-                .Take(50);
-
-            foreach (var entry in systemRecent)
-            {
-                var level = entry.EntryType switch
-                {
-                    System.Diagnostics.EventLogEntryType.Error => "Error",
-                    System.Diagnostics.EventLogEntryType.Warning => "Warning",
-                    System.Diagnostics.EventLogEntryType.Information => "Info",
-                    _ => entry.EntryType.ToString()
-                };
-                entries.Add(new EventLogItem(entry.TimeGenerated, level, entry.Source, entry.Message));
-            }
-
-            EventLogEntries = new ObservableCollection<EventLogItem>(
-                entries.OrderByDescending(e => e.TimeGenerated));
+            EventLogEntries = new ObservableCollection<EventLogItem>(items);
         }
         catch (Exception ex)
         {
             EventLogEntries = new ObservableCollection<EventLogItem>(
                 [new EventLogItem(DateTime.Now, "Error", "IISBlitz", $"Failed to read event log: {ex.Message}")]);
         }
+        finally
+        {
+            IsLoadingEvents = false;
+        }
+    }
+
+    /// <summary>
+    /// Reads IIS / ASP.NET related events from the Application and System logs.
+    /// The time window is pushed into the XPath query so the reader only touches recent records
+    /// instead of enumerating the whole log through the legacy EventLog API.
+    /// </summary>
+    private static List<EventLogItem> ReadRecentEvents(TimeSpan window)
+    {
+        var result = new List<EventLogItem>();
+        var query = $"*[System[TimeCreated[timediff(@SystemTime) <= {(long)window.TotalMilliseconds}]]]";
+
+        foreach (var logName in new[] { "Application", "System" })
+        {
+            try
+            {
+                var eventQuery = new System.Diagnostics.Eventing.Reader.EventLogQuery(logName,
+                    System.Diagnostics.Eventing.Reader.PathType.LogName, query) { ReverseDirection = true };
+                using var reader = new System.Diagnostics.Eventing.Reader.EventLogReader(eventQuery);
+
+                var taken = 0;
+                while (taken < 300 && reader.ReadEvent() is { } record)
+                {
+                    using (record)
+                    {
+                        var source = record.ProviderName ?? string.Empty;
+                        if (!EventSourceHints.Any(h => source.Contains(h, StringComparison.OrdinalIgnoreCase)))
+                            continue;
+
+                        var level = record.Level switch
+                        {
+                            1 or 2 => "Error",
+                            3 => "Warning",
+                            _ => "Info",
+                        };
+
+                        string message;
+                        try { message = record.FormatDescription() ?? string.Empty; }
+                        catch { message = string.Join(" ", record.Properties.Select(p => p.Value?.ToString())); }
+
+                        result.Add(new EventLogItem(record.TimeCreated ?? DateTime.Now, level, source, message.Trim()));
+                        taken++;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                result.Add(new EventLogItem(DateTime.Now, "Warning", "IISBlitz", $"Could not read the {logName} log: {ex.Message}"));
+            }
+        }
+
+        return result.OrderByDescending(e => e.TimeGenerated).ToList();
     }
 
     private void FilterEventLog(string? filter)
     {
         EventLogFilter = filter ?? "All";
         LoadEventLog();
-
-        if (filter != null && filter != "All")
-        {
-            EventLogEntries = new ObservableCollection<EventLogItem>(
-                EventLogEntries.Where(e => e.Level.Equals(filter, StringComparison.OrdinalIgnoreCase)));
-        }
     }
 
     private async void RunHealthCheckSeries()
@@ -586,6 +740,7 @@ public partial class SiteViewModel : ObservableObject
         }
 
         HealthCheckResult = "Running series (5 pings)...";
+        IsPinging = true;
         var history = new List<HealthCheckEntry>();
 
         try
@@ -628,10 +783,15 @@ public partial class SiteViewModel : ObservableObject
             var avg = history.Average(h => h.ResponseTimeMs);
             var last = history[^1];
             HealthCheckResult = $"{last.StatusCode} — avg: {avg:F0}ms, last: {last.ResponseTimeMs}ms ({HealthCheckHistory.Count} total)";
+            LastPingText = $"{last.StatusCode} · {last.ResponseTimeMs} ms";
         }
         catch (Exception ex)
         {
             HealthCheckResult = $"Error: {ex.Message}";
+        }
+        finally
+        {
+            IsPinging = false;
         }
     }
 
@@ -754,6 +914,8 @@ public partial class SiteViewModel : ObservableObject
             }
 
             SelectedSite.WorkerProcesses = workers;
+            var totalKb = workers.Sum(w => w.MemoryKb);
+            WorkerMemoryText = workers.Count == 0 ? "—" : $"{totalKb / 1024} MB";
         }
         catch (Exception ex)
         {
@@ -850,6 +1012,7 @@ public partial class SiteViewModel : ObservableObject
         }
 
         HealthCheckResult = "Checking...";
+        IsPinging = true;
         try
         {
             using var handler = new HttpClientHandler
@@ -869,14 +1032,21 @@ public partial class SiteViewModel : ObservableObject
                 .ToList();
 
             HealthCheckResult = $"{(int)response.StatusCode} {response.StatusCode} — {sw.ElapsedMilliseconds}ms";
+            LastPingText = $"{(int)response.StatusCode} · {sw.ElapsedMilliseconds} ms";
         }
         catch (TaskCanceledException)
         {
             HealthCheckResult = "Timeout (10s)";
+            LastPingText = "timeout";
         }
         catch (Exception ex)
         {
             HealthCheckResult = $"Error: {ex.Message}";
+            LastPingText = "error";
+        }
+        finally
+        {
+            IsPinging = false;
         }
     }
 
@@ -1039,13 +1209,27 @@ public partial class SiteViewModel : ObservableObject
     private void LoadSiteDetails()
     {
         if (SelectedSite == null) return;
+        _loadingSite = true;
+        try
+        {
+            LoadSiteDetailsCore();
+        }
+        finally
+        {
+            _loadingSite = false;
+        }
+    }
+
+    private void LoadSiteDetailsCore()
+    {
+        if (SelectedSite == null) return;
 
         // Read environment from web.config
         var currentEnv = ReadEnvironmentFromWebConfig(SelectedSite.PhysicalPath);
-        SelectedSite.CurrentEnvironment = currentEnv;
 
-        // Build available environments from appsettings files + defaults
-        var envs = new System.Collections.Generic.List<string> { "Development", "Staging", "Production" };
+        // Build available environments from appsettings files + defaults.
+        // The list is assigned before the current value: replacing the list would otherwise reset the selection.
+        var envs = new System.Collections.Generic.List<string> { "Development", "Production" };
         try
         {
             var detected = Directory.GetFiles(SelectedSite.PhysicalPath, "appsettings.*.json")
@@ -1059,8 +1243,11 @@ public partial class SiteViewModel : ObservableObject
             }
         }
         catch { }
+        if (!envs.Contains(currentEnv, StringComparer.OrdinalIgnoreCase))
+            envs.Add(currentEnv);
         SelectedSite.AvailableEnvironments = new ObservableCollection<string>(
             envs.Distinct(StringComparer.OrdinalIgnoreCase).OrderBy(e => e));
+        SelectedSite.CurrentEnvironment = currentEnv;
 
         // Load appsettings based on environment
         var settingsFile = currentEnv.Equals("Production", StringComparison.OrdinalIgnoreCase)

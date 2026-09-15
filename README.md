@@ -39,10 +39,12 @@ A fast, modern desktop app for managing IIS websites on Windows. Built with **Av
 - Full response body with HTML syntax highlighting
 
 ### 🎨 UI
-- Dark / Light theme toggle
+- **Command palette** — `Ctrl+K` fuzzy-searches sites, tabs and actions (recycle, restart, ping, open folder, …)
+- Dark / light theme that follows the OS by default; the toggle (`Ctrl+Shift+L`) remembers your choice
 - Site search & filter
-- Keyboard shortcuts: `F5` refresh, `Ctrl+S` save, `Ctrl+R` recycle, `Ctrl+F` search
-- Status bar with site count and health check result
+- Keyboard shortcuts: `F5` refresh, `Ctrl+S` save, `Ctrl+R` recycle, `Ctrl+F` filter sites
+- Status bar with site count, running count and the last health check result
+- Version shown in the header, taken from the assembly
 
 ## Prerequisites
 
@@ -60,16 +62,22 @@ dotnet run
 
 Or download the latest release from [Releases](https://github.com/TomasBouda/IISBlitz/releases) and run `IISBlitz.exe` as administrator.
 
+Want the newest code instead? Every push to `master` refreshes the **[nightly pre-release](https://github.com/TomasBouda/IISBlitz/releases/tag/nightly)** — grab `IISBlitz-win-x64.zip` from there; the app header shows `v0.x.y-nightly.<commit>` so you can tell the builds apart.
+
 ## Creating a Release
 
 Push a version tag to trigger the release pipeline:
 
 ```bash
-git tag v0.3.0
-git push origin v0.3.0
+git tag v0.5.0
+git push origin v0.5.0
 ```
 
-This builds self-contained executables for `win-x64` and `win-arm64` and creates a GitHub Release with the artifacts.
+This builds self-contained, trimmed single-file executables (~27 MB) for `win-x64` and `win-arm64` and creates a GitHub Release with the artifacts. The same build locally:
+
+```bash
+dotnet publish src/TomLabs.IISBlitz.App/TomLabs.IISBlitz.App.csproj -c Release -r win-x64 -o publish
+```
 
 ## Tech Stack
 

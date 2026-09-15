@@ -1,0 +1,694 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:controls="clr-namespace:TomLabs.IISBlitz.App.Controls"
+        xmlns:ae="https://github.com/avaloniaui/avaloniaedit">
+    <!--
+        Control styling for the "ops console" look: hairline borders, 5-6px radii, a single amber accent,
+        and short (≤ 250 ms) ease-out motion. Colours come exclusively from Tokens.axaml.
+    -->
+
+    <Styles.Resources>
+        <!-- Tab strip: 12px labels with a 1px accent underline instead of Fluent's large pipe tabs. -->
+        <ControlTheme x:Key="{x:Type TabControl}" TargetType="TabControl">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="ItemsPanel">
+                <ItemsPanelTemplate>
+                    <StackPanel Orientation="Horizontal" Spacing="18"/>
+                </ItemsPanelTemplate>
+            </Setter>
+            <Setter Property="Template">
+                <ControlTemplate>
+                    <Border Background="{TemplateBinding Background}">
+                        <DockPanel>
+                            <Border DockPanel.Dock="Top"
+                                    BorderThickness="0,0,0,1"
+                                    BorderBrush="{DynamicResource HairlineBrush}"
+                                    Padding="18,0">
+                                <ItemsPresenter Name="PART_ItemsPresenter" ItemsPanel="{TemplateBinding ItemsPanel}"/>
+                            </Border>
+                            <ContentPresenter Name="PART_SelectedContentHost"
+                                              Content="{TemplateBinding SelectedContent}"
+                                              ContentTemplate="{TemplateBinding SelectedContentTemplate}"
+                                              Margin="{TemplateBinding Padding}"/>
+                        </DockPanel>
+                    </Border>
+                </ControlTemplate>
+            </Setter>
+        </ControlTheme>
+
+        <ControlTheme x:Key="{x:Type TabItem}" TargetType="TabItem">
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="FontWeight" Value="Normal"/>
+            <Setter Property="Foreground" Value="{DynamicResource TextMutedBrush}"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Padding" Value="0,9"/>
+            <Setter Property="MinHeight" Value="0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Transitions">
+                <Transitions>
+                    <BrushTransition Property="Foreground" Duration="0:0:0.12"/>
+                </Transitions>
+            </Setter>
+            <Setter Property="Template">
+                <ControlTemplate>
+                    <Border Name="PART_LayoutRoot" Background="{TemplateBinding Background}" Padding="{TemplateBinding Padding}">
+                        <Panel>
+                            <ContentPresenter Name="PART_ContentPresenter"
+                                              Content="{TemplateBinding Header}"
+                                              ContentTemplate="{TemplateBinding HeaderTemplate}"
+                                              VerticalAlignment="Center"/>
+                            <Border Name="PART_SelectedPipe"
+                                    Height="1"
+                                    VerticalAlignment="Bottom"
+                                    Margin="0,0,0,-9"
+                                    Background="{DynamicResource AccentBrush}"
+                                    Opacity="0">
+                                <Border.Transitions>
+                                    <Transitions>
+                                        <DoubleTransition Property="Opacity" Duration="0:0:0.15"/>
+                                    </Transitions>
+                                </Border.Transitions>
+                            </Border>
+                        </Panel>
+                    </Border>
+                </ControlTemplate>
+            </Setter>
+            <Style Selector="^:pointerover">
+                <Setter Property="Foreground" Value="{DynamicResource TextBrush}"/>
+            </Style>
+            <Style Selector="^:selected">
+                <Setter Property="Foreground" Value="{DynamicResource TextBrush}"/>
+            </Style>
+            <Style Selector="^:selected /template/ Border#PART_SelectedPipe">
+                <Setter Property="Opacity" Value="1"/>
+            </Style>
+        </ControlTheme>
+
+        <!-- Status dot: green when running, grey when stopped; the live variant pulses a glow ring. -->
+        <ControlTheme x:Key="{x:Type controls:StatusDot}" TargetType="controls:StatusDot">
+            <Setter Property="Width" Value="7"/>
+            <Setter Property="Height" Value="7"/>
+            <Setter Property="Template">
+                <ControlTemplate>
+                    <Panel>
+                        <Ellipse Name="Ring" Width="7" Height="7" Opacity="0"
+                                 Stroke="{DynamicResource RunningBrush}" StrokeThickness="1.5"
+                                 RenderTransformOrigin="50%,50%">
+                            <Ellipse.RenderTransform>
+                                <ScaleTransform/>
+                            </Ellipse.RenderTransform>
+                        </Ellipse>
+                        <Ellipse Name="Dot" Width="7" Height="7" Fill="{DynamicResource StoppedBrush}"/>
+                    </Panel>
+                </ControlTemplate>
+            </Setter>
+            <Style Selector="^:running /template/ Ellipse#Dot">
+                <Setter Property="Fill" Value="{DynamicResource RunningBrush}"/>
+            </Style>
+            <Style Selector="^:live /template/ Ellipse#Ring">
+                <Style.Animations>
+                    <Animation Duration="0:0:2.2" IterationCount="Infinite" Easing="CubicEaseOut">
+                        <KeyFrame Cue="0%">
+                            <Setter Property="Opacity" Value="0.8"/>
+                            <Setter Property="ScaleTransform.ScaleX" Value="1"/>
+                            <Setter Property="ScaleTransform.ScaleY" Value="1"/>
+                        </KeyFrame>
+                        <KeyFrame Cue="60%">
+                            <Setter Property="Opacity" Value="0"/>
+                            <Setter Property="ScaleTransform.ScaleX" Value="2.6"/>
+                            <Setter Property="ScaleTransform.ScaleY" Value="2.6"/>
+                        </KeyFrame>
+                        <KeyFrame Cue="100%">
+                            <Setter Property="Opacity" Value="0"/>
+                            <Setter Property="ScaleTransform.ScaleX" Value="2.6"/>
+                            <Setter Property="ScaleTransform.ScaleY" Value="2.6"/>
+                        </KeyFrame>
+                    </Animation>
+                </Style.Animations>
+            </Style>
+        </ControlTheme>
+    </Styles.Resources>
+
+    <!-- ===== Window and typography ===== -->
+    <Style Selector="Window">
+        <Setter Property="Background" Value="{DynamicResource BgBrush}"/>
+        <Setter Property="Foreground" Value="{DynamicResource TextBrush}"/>
+        <Setter Property="FontFamily" Value="{StaticResource UiFont}"/>
+        <Setter Property="FontSize" Value="12"/>
+    </Style>
+
+    <Style Selector="TextBlock.mono">
+        <Setter Property="FontFamily" Value="{StaticResource MonoFont}"/>
+    </Style>
+    <Style Selector="TextBlock.secondary">
+        <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
+    </Style>
+    <Style Selector="TextBlock.muted">
+        <Setter Property="Foreground" Value="{DynamicResource TextMutedBrush}"/>
+    </Style>
+    <Style Selector="TextBlock.faint">
+        <Setter Property="Foreground" Value="{DynamicResource TextFaintBrush}"/>
+    </Style>
+    <Style Selector="TextBlock.accent">
+        <Setter Property="Foreground" Value="{DynamicResource AccentBrush}"/>
+    </Style>
+    <Style Selector="TextBlock.running">
+        <Setter Property="Foreground" Value="{DynamicResource RunningBrush}"/>
+    </Style>
+    <Style Selector="TextBlock.error">
+        <Setter Property="Foreground" Value="{DynamicResource ErrorBrush}"/>
+    </Style>
+    <!-- Small uppercase section label (write the text in capitals). -->
+    <Style Selector="TextBlock.section">
+        <Setter Property="FontSize" Value="10.5"/>
+        <Setter Property="LetterSpacing" Value="1"/>
+        <Setter Property="Foreground" Value="{DynamicResource TextMutedBrush}"/>
+    </Style>
+    <Style Selector="TextBlock.label">
+        <Setter Property="FontSize" Value="11"/>
+        <Setter Property="Foreground" Value="{DynamicResource TextMutedBrush}"/>
+    </Style>
+    <Style Selector="TextBlock.h">
+        <Setter Property="FontSize" Value="12"/>
+        <Setter Property="FontWeight" Value="Medium"/>
+    </Style>
+    <Style Selector="TextBlock.title">
+        <Setter Property="FontSize" Value="17"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+    </Style>
+    <Style Selector="TextBlock.value">
+        <Setter Property="FontFamily" Value="{StaticResource MonoFont}"/>
+        <Setter Property="FontSize" Value="15"/>
+    </Style>
+
+    <!-- ===== Surfaces ===== -->
+    <Style Selector="Border.card">
+        <Setter Property="Background" Value="{DynamicResource PanelBrush}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource HairlineBrush}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="CornerRadius" Value="6"/>
+        <Setter Property="Padding" Value="14,12"/>
+    </Style>
+    <Style Selector="Border.card.accent">
+        <Setter Property="Background" Value="{DynamicResource AccentSoftBrush}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource AccentBorderBrush}"/>
+    </Style>
+    <Style Selector="Border.card.error">
+        <Setter Property="Background" Value="{DynamicResource ErrorSoftBrush}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource ErrorBrush}"/>
+    </Style>
+    <!-- Table card: no padding, header row inside. -->
+    <Style Selector="Border.table">
+        <Setter Property="BorderBrush" Value="{DynamicResource HairlineBrush}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="CornerRadius" Value="6"/>
+        <Setter Property="ClipToBounds" Value="True"/>
+    </Style>
+    <Style Selector="Border.tablehead">
+        <Setter Property="BorderBrush" Value="{DynamicResource HairlineBrush}"/>
+        <Setter Property="BorderThickness" Value="0,0,0,1"/>
+        <Setter Property="Padding" Value="12,8"/>
+    </Style>
+    <Style Selector="Border.hairline-b">
+        <Setter Property="BorderBrush" Value="{DynamicResource HairlineBrush}"/>
+        <Setter Property="BorderThickness" Value="0,0,0,1"/>
+    </Style>
+    <Style Selector="Border.hairline-t">
+        <Setter Property="BorderBrush" Value="{DynamicResource HairlineBrush}"/>
+        <Setter Property="BorderThickness" Value="0,1,0,0"/>
+    </Style>
+    <Style Selector="Border.hairline-r">
+        <Setter Property="BorderBrush" Value="{DynamicResource HairlineBrush}"/>
+        <Setter Property="BorderThickness" Value="0,0,1,0"/>
+    </Style>
+    <Style Selector="Border.hairline-l">
+        <Setter Property="BorderBrush" Value="{DynamicResource HairlineBrush}"/>
+        <Setter Property="BorderThickness" Value="1,0,0,0"/>
+    </Style>
+    <Style Selector="Border.vsep">
+        <Setter Property="Width" Value="1"/>
+        <Setter Property="Height" Value="18"/>
+        <Setter Property="Background" Value="{DynamicResource HairlineBrush}"/>
+        <Setter Property="Margin" Value="6,0"/>
+        <Setter Property="VerticalAlignment" Value="Center"/>
+    </Style>
+
+    <!-- Chips and keyboard hints -->
+    <Style Selector="Border.chip">
+        <Setter Property="Background" Value="{DynamicResource SelectedBrush}"/>
+        <Setter Property="CornerRadius" Value="3"/>
+        <Setter Property="Padding" Value="6,2"/>
+        <Setter Property="VerticalAlignment" Value="Center"/>
+    </Style>
+    <Style Selector="Border.chip > TextBlock">
+        <Setter Property="FontFamily" Value="{StaticResource MonoFont}"/>
+        <Setter Property="FontSize" Value="10"/>
+        <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
+    </Style>
+    <Style Selector="Border.chip.running">
+        <Setter Property="Background" Value="{DynamicResource RunningSoftBrush}"/>
+    </Style>
+    <Style Selector="Border.chip.running > TextBlock">
+        <Setter Property="Foreground" Value="{DynamicResource RunningBrush}"/>
+    </Style>
+    <Style Selector="Border.chip.accent">
+        <Setter Property="Background" Value="{DynamicResource AccentSoftBrush}"/>
+    </Style>
+    <Style Selector="Border.chip.accent > TextBlock">
+        <Setter Property="Foreground" Value="{DynamicResource AccentBrush}"/>
+    </Style>
+    <Style Selector="Border.kbd">
+        <Setter Property="BorderBrush" Value="{DynamicResource HairlineStrongBrush}"/>
+        <Setter Property="BorderThickness" Value="1,1,1,2"/>
+        <Setter Property="CornerRadius" Value="4"/>
+        <Setter Property="Padding" Value="5,1"/>
+        <Setter Property="VerticalAlignment" Value="Center"/>
+    </Style>
+    <Style Selector="Border.kbd > TextBlock">
+        <Setter Property="FontFamily" Value="{StaticResource MonoFont}"/>
+        <Setter Property="FontSize" Value="10"/>
+        <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
+    </Style>
+
+    <!-- ===== Buttons ===== -->
+    <Style Selector="Button">
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource HairlineStrongBrush}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="CornerRadius" Value="5"/>
+        <Setter Property="Padding" Value="10,6"/>
+        <Setter Property="MinHeight" Value="0"/>
+        <Setter Property="FontSize" Value="12"/>
+        <Setter Property="Foreground" Value="{DynamicResource TextBrush}"/>
+        <Setter Property="VerticalAlignment" Value="Center"/>
+        <Setter Property="Cursor" Value="Hand"/>
+    </Style>
+    <Style Selector="Button /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Transitions">
+            <Transitions>
+                <BrushTransition Property="Background" Duration="0:0:0.1"/>
+                <BrushTransition Property="BorderBrush" Duration="0:0:0.1"/>
+            </Transitions>
+        </Setter>
+    </Style>
+    <Style Selector="Button:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{DynamicResource HoverBrush}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource HairlineStrongBrush}"/>
+        <Setter Property="Foreground" Value="{DynamicResource TextBrush}"/>
+    </Style>
+    <Style Selector="Button:pressed /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{DynamicResource ActiveBrush}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource HairlineStrongBrush}"/>
+        <Setter Property="Foreground" Value="{DynamicResource TextBrush}"/>
+    </Style>
+    <Style Selector="Button:disabled /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="Opacity" Value="0.4"/>
+    </Style>
+    <Style Selector="Button > StackPanel">
+        <Setter Property="Orientation" Value="Horizontal"/>
+        <Setter Property="Spacing" Value="6"/>
+    </Style>
+    <Style Selector="Button > StackPanel > TextBlock">
+        <Setter Property="VerticalAlignment" Value="Center"/>
+    </Style>
+
+    <!-- The one highlighted action (Ping, Save). -->
+    <Style Selector="Button.accent">
+        <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}"/>
+        <Setter Property="Background" Value="{DynamicResource AccentSoftBrush}"/>
+        <Setter Property="Foreground" Value="{DynamicResource AccentBrush}"/>
+        <Setter Property="FontWeight" Value="Medium"/>
+    </Style>
+    <Style Selector="Button.accent:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{DynamicResource AccentBorderBrush}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}"/>
+        <Setter Property="Foreground" Value="{DynamicResource AccentBrush}"/>
+    </Style>
+    <Style Selector="Button.accent:pressed /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{DynamicResource AccentBorderBrush}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}"/>
+        <Setter Property="Foreground" Value="{DynamicResource AccentBrush}"/>
+    </Style>
+
+    <!-- Borderless 28px icon button (header, inline actions). -->
+    <Style Selector="Button.icon">
+        <Setter Property="Width" Value="28"/>
+        <Setter Property="Height" Value="28"/>
+        <Setter Property="Padding" Value="0"/>
+        <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="Foreground" Value="{DynamicResource TextMutedBrush}"/>
+        <Setter Property="HorizontalContentAlignment" Value="Center"/>
+        <Setter Property="VerticalContentAlignment" Value="Center"/>
+    </Style>
+    <Style Selector="Button.icon.small">
+        <Setter Property="Width" Value="22"/>
+        <Setter Property="Height" Value="22"/>
+    </Style>
+    <Style Selector="Button.icon:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{DynamicResource HoverBrush}"/>
+        <Setter Property="Foreground" Value="{DynamicResource TextBrush}"/>
+    </Style>
+
+    <!-- Text-only button used inside lists. -->
+    <Style Selector="Button.ghost">
+        <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="CornerRadius" Value="3"/>
+        <Setter Property="Padding" Value="6,4"/>
+    </Style>
+
+    <!-- ===== Inputs ===== -->
+    <Style Selector="TextBox">
+        <Setter Property="Background" Value="{DynamicResource PanelBrush}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource HairlineStrongBrush}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="CornerRadius" Value="5"/>
+        <Setter Property="FontSize" Value="12"/>
+        <Setter Property="MinHeight" Value="28"/>
+        <Setter Property="Padding" Value="9,4"/>
+        <Setter Property="Foreground" Value="{DynamicResource TextBrush}"/>
+    </Style>
+    <Style Selector="TextBox /template/ Border#PART_BorderElement">
+        <Setter Property="Transitions">
+            <Transitions>
+                <BrushTransition Property="BorderBrush" Duration="0:0:0.12"/>
+            </Transitions>
+        </Setter>
+    </Style>
+    <Style Selector="TextBox:pointerover /template/ Border#PART_BorderElement">
+        <Setter Property="Background" Value="{DynamicResource PanelBrush}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource HairlineStrongBrush}"/>
+    </Style>
+    <Style Selector="TextBox:focus /template/ Border#PART_BorderElement">
+        <Setter Property="Background" Value="{DynamicResource PanelBrush}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+    </Style>
+    <Style Selector="TextBox /template/ TextBlock#PART_Watermark">
+        <Setter Property="Foreground" Value="{DynamicResource TextMutedBrush}"/>
+    </Style>
+    <!-- Borderless input (command palette). -->
+    <Style Selector="TextBox.bare">
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="Padding" Value="0"/>
+        <Setter Property="MinHeight" Value="0"/>
+    </Style>
+    <Style Selector="TextBox.bare:pointerover /template/ Border#PART_BorderElement, TextBox.bare:focus /template/ Border#PART_BorderElement">
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="BorderThickness" Value="0"/>
+    </Style>
+    <Style Selector="TextBox.mono">
+        <Setter Property="FontFamily" Value="{StaticResource MonoFont}"/>
+    </Style>
+
+    <Style Selector="ComboBox">
+        <Setter Property="Background" Value="{DynamicResource PanelBrush}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource HairlineStrongBrush}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="CornerRadius" Value="5"/>
+        <Setter Property="FontSize" Value="12"/>
+        <Setter Property="MinHeight" Value="28"/>
+        <Setter Property="Padding" Value="9,4"/>
+        <Setter Property="Foreground" Value="{DynamicResource TextBrush}"/>
+    </Style>
+    <Style Selector="ComboBox:pointerover /template/ Border#Background">
+        <Setter Property="Background" Value="{DynamicResource HoverBrush}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource HairlineStrongBrush}"/>
+    </Style>
+
+    <!-- ===== Lists ===== -->
+    <Style Selector="ListBox">
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="Padding" Value="0"/>
+    </Style>
+
+    <!-- Row lists (sites, log files): hover fill + 2px accent bar on the left, selected keeps the bar. -->
+    <Style Selector="ListBox.rows ListBoxItem">
+        <Setter Property="Padding" Value="10,9,12,9"/>
+        <Setter Property="Margin" Value="0"/>
+        <Setter Property="MinHeight" Value="0"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="Template">
+            <ControlTemplate>
+                <Border Name="Root"
+                        Background="Transparent"
+                        BorderBrush="Transparent"
+                        BorderThickness="2,0,0,0"
+                        Padding="{TemplateBinding Padding}">
+                    <Border.Transitions>
+                        <Transitions>
+                            <BrushTransition Property="Background" Duration="0:0:0.1"/>
+                            <BrushTransition Property="BorderBrush" Duration="0:0:0.1"/>
+                        </Transitions>
+                    </Border.Transitions>
+                    <ContentPresenter Name="Content"
+                                      Content="{TemplateBinding Content}"
+                                      ContentTemplate="{TemplateBinding ContentTemplate}"
+                                      HorizontalContentAlignment="Stretch"
+                                      VerticalContentAlignment="Center"/>
+                </Border>
+            </ControlTemplate>
+        </Setter>
+    </Style>
+    <Style Selector="ListBox.rows ListBoxItem:pointerover /template/ Border#Root">
+        <Setter Property="Background" Value="{DynamicResource HoverBrush}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}"/>
+    </Style>
+    <Style Selector="ListBox.rows ListBoxItem:selected /template/ Border#Root">
+        <Setter Property="Background" Value="{DynamicResource SelectedBrush}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}"/>
+    </Style>
+    <Style Selector="ListBox.rows.compact ListBoxItem">
+        <Setter Property="Padding" Value="10,6,10,6"/>
+    </Style>
+
+    <!-- Segmented control (environment switcher, event filters). -->
+    <Style Selector="ListBox.segmented">
+        <Setter Property="BorderBrush" Value="{DynamicResource HairlineStrongBrush}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="CornerRadius" Value="5"/>
+        <Setter Property="Padding" Value="2"/>
+        <Setter Property="ItemsPanel">
+            <ItemsPanelTemplate>
+                <StackPanel Orientation="Horizontal" Spacing="2"/>
+            </ItemsPanelTemplate>
+        </Setter>
+    </Style>
+    <Style Selector="ListBox.segmented ListBoxItem">
+        <Setter Property="Padding" Value="8,3"/>
+        <Setter Property="Margin" Value="0"/>
+        <Setter Property="MinHeight" Value="0"/>
+        <Setter Property="FontSize" Value="11"/>
+        <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="Template">
+            <ControlTemplate>
+                <Border Name="Root" Background="Transparent" CornerRadius="3" Padding="{TemplateBinding Padding}">
+                    <Border.Transitions>
+                        <Transitions>
+                            <BrushTransition Property="Background" Duration="0:0:0.1"/>
+                        </Transitions>
+                    </Border.Transitions>
+                    <ContentPresenter Name="Content"
+                                      Content="{TemplateBinding Content}"
+                                      ContentTemplate="{TemplateBinding ContentTemplate}"/>
+                </Border>
+            </ControlTemplate>
+        </Setter>
+    </Style>
+    <Style Selector="ListBox.segmented ListBoxItem:pointerover /template/ Border#Root">
+        <Setter Property="Background" Value="{DynamicResource HoverBrush}"/>
+    </Style>
+    <Style Selector="ListBox.segmented ListBoxItem:selected">
+        <Setter Property="Foreground" Value="{DynamicResource TextBrush}"/>
+    </Style>
+    <Style Selector="ListBox.segmented ListBoxItem:selected /template/ Border#Root">
+        <Setter Property="Background" Value="{DynamicResource HairlineStrongBrush}"/>
+    </Style>
+
+    <!-- ===== DataGrid ===== -->
+    <Style Selector="DataGrid">
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="FontSize" Value="11.5"/>
+        <Setter Property="RowBackground" Value="Transparent"/>
+        <Setter Property="HorizontalGridLinesBrush" Value="{DynamicResource HairlineBrush}"/>
+        <Setter Property="VerticalGridLinesBrush" Value="{DynamicResource HairlineBrush}"/>
+        <Setter Property="GridLinesVisibility" Value="Horizontal"/>
+        <Setter Property="HeadersVisibility" Value="Column"/>
+        <Setter Property="IsReadOnly" Value="True"/>
+        <Setter Property="CanUserResizeColumns" Value="True"/>
+        <Setter Property="RowHeight" Value="30"/>
+    </Style>
+    <Style Selector="DataGridColumnHeader">
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="Foreground" Value="{DynamicResource TextMutedBrush}"/>
+        <Setter Property="FontSize" Value="10.5"/>
+        <Setter Property="FontWeight" Value="Normal"/>
+        <Setter Property="MinHeight" Value="30"/>
+        <Setter Property="Padding" Value="12,0"/>
+        <Setter Property="SeparatorBrush" Value="Transparent"/>
+        <Setter Property="BorderThickness" Value="0,0,0,1"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource HairlineBrush}"/>
+    </Style>
+    <Style Selector="DataGridCell">
+        <Setter Property="Foreground" Value="{DynamicResource TextBrush}"/>
+        <Setter Property="FontSize" Value="11.5"/>
+        <Setter Property="Padding" Value="12,0"/>
+        <Setter Property="BorderThickness" Value="0"/>
+    </Style>
+    <Style Selector="DataGridCell:focus /template/ Grid#FocusVisual">
+        <Setter Property="IsVisible" Value="False"/>
+    </Style>
+    <Style Selector="DataGridRow:pointerover /template/ Rectangle#BackgroundRectangle">
+        <Setter Property="Fill" Value="{DynamicResource HoverBrush}"/>
+        <Setter Property="Opacity" Value="1"/>
+    </Style>
+    <Style Selector="DataGridRow:selected /template/ Rectangle#BackgroundRectangle">
+        <Setter Property="Fill" Value="{DynamicResource SelectedBrush}"/>
+        <Setter Property="Opacity" Value="1"/>
+    </Style>
+    <Style Selector="DataGridRow:selected:pointerover /template/ Rectangle#BackgroundRectangle">
+        <Setter Property="Fill" Value="{DynamicResource ActiveBrush}"/>
+        <Setter Property="Opacity" Value="1"/>
+    </Style>
+    <Style Selector="DataGrid.mono DataGridCell">
+        <Setter Property="FontFamily" Value="{StaticResource MonoFont}"/>
+    </Style>
+
+    <!-- ===== Code editors ===== -->
+    <Style Selector="ae|TextEditor">
+        <Setter Property="Background" Value="{DynamicResource BgEditorBrush}"/>
+        <Setter Property="Foreground" Value="{DynamicResource TextBrush}"/>
+        <Setter Property="LineNumbersForeground" Value="{DynamicResource TextFaintBrush}"/>
+        <Setter Property="FontFamily" Value="{StaticResource MonoFont}"/>
+        <Setter Property="FontSize" Value="12"/>
+        <Setter Property="Padding" Value="8,6"/>
+        <Setter Property="ShowLineNumbers" Value="True"/>
+    </Style>
+
+    <!-- ===== Motion ===== -->
+    <!-- Content fades up 4px when it appears; d1..d4 stagger sibling blocks by 40 ms. -->
+    <Style Selector=":is(Control).fade-in">
+        <Style.Animations>
+            <Animation Duration="0:0:0.25" Easing="CubicEaseOut" FillMode="Both">
+                <KeyFrame Cue="0%">
+                    <Setter Property="Opacity" Value="0"/>
+                    <Setter Property="TranslateTransform.Y" Value="4"/>
+                </KeyFrame>
+                <KeyFrame Cue="100%">
+                    <Setter Property="Opacity" Value="1"/>
+                    <Setter Property="TranslateTransform.Y" Value="0"/>
+                </KeyFrame>
+            </Animation>
+        </Style.Animations>
+    </Style>
+    <Style Selector=":is(Control).fade-in.d1">
+        <Style.Animations>
+            <Animation Duration="0:0:0.25" Delay="0:0:0.04" Easing="CubicEaseOut" FillMode="Both">
+                <KeyFrame Cue="0%">
+                    <Setter Property="Opacity" Value="0"/>
+                    <Setter Property="TranslateTransform.Y" Value="4"/>
+                </KeyFrame>
+                <KeyFrame Cue="100%">
+                    <Setter Property="Opacity" Value="1"/>
+                    <Setter Property="TranslateTransform.Y" Value="0"/>
+                </KeyFrame>
+            </Animation>
+        </Style.Animations>
+    </Style>
+    <Style Selector=":is(Control).fade-in.d2">
+        <Style.Animations>
+            <Animation Duration="0:0:0.25" Delay="0:0:0.08" Easing="CubicEaseOut" FillMode="Both">
+                <KeyFrame Cue="0%">
+                    <Setter Property="Opacity" Value="0"/>
+                    <Setter Property="TranslateTransform.Y" Value="4"/>
+                </KeyFrame>
+                <KeyFrame Cue="100%">
+                    <Setter Property="Opacity" Value="1"/>
+                    <Setter Property="TranslateTransform.Y" Value="0"/>
+                </KeyFrame>
+            </Animation>
+        </Style.Animations>
+    </Style>
+    <Style Selector=":is(Control).fade-in.d3">
+        <Style.Animations>
+            <Animation Duration="0:0:0.25" Delay="0:0:0.12" Easing="CubicEaseOut" FillMode="Both">
+                <KeyFrame Cue="0%">
+                    <Setter Property="Opacity" Value="0"/>
+                    <Setter Property="TranslateTransform.Y" Value="4"/>
+                </KeyFrame>
+                <KeyFrame Cue="100%">
+                    <Setter Property="Opacity" Value="1"/>
+                    <Setter Property="TranslateTransform.Y" Value="0"/>
+                </KeyFrame>
+            </Animation>
+        </Style.Animations>
+    </Style>
+    <Style Selector=":is(Control).fade-in.d4">
+        <Style.Animations>
+            <Animation Duration="0:0:0.25" Delay="0:0:0.16" Easing="CubicEaseOut" FillMode="Both">
+                <KeyFrame Cue="0%">
+                    <Setter Property="Opacity" Value="0"/>
+                    <Setter Property="TranslateTransform.Y" Value="4"/>
+                </KeyFrame>
+                <KeyFrame Cue="100%">
+                    <Setter Property="Opacity" Value="1"/>
+                    <Setter Property="TranslateTransform.Y" Value="0"/>
+                </KeyFrame>
+            </Animation>
+        </Style.Animations>
+    </Style>
+
+    <!-- Amber highlight sweeping across the ping card while a request is in flight. -->
+    <Style Selector="Border.sweep">
+        <Setter Property="Width" Value="90"/>
+        <Setter Property="HorizontalAlignment" Value="Left"/>
+        <Setter Property="IsHitTestVisible" Value="False"/>
+        <Setter Property="Background">
+            <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,0%">
+                <GradientStop Offset="0" Color="#00F5B400"/>
+                <GradientStop Offset="0.5" Color="#40F5B400"/>
+                <GradientStop Offset="1" Color="#00F5B400"/>
+            </LinearGradientBrush>
+        </Setter>
+        <Style.Animations>
+            <Animation Duration="0:0:1.8" IterationCount="Infinite">
+                <KeyFrame Cue="0%">
+                    <Setter Property="TranslateTransform.X" Value="-100"/>
+                </KeyFrame>
+                <KeyFrame Cue="100%">
+                    <Setter Property="TranslateTransform.X" Value="360"/>
+                </KeyFrame>
+            </Animation>
+        </Style.Animations>
+    </Style>
+
+    <!-- Command palette: pops in from above while the scrim fades. -->
+    <Style Selector="Border.scrim">
+        <Setter Property="Background" Value="{DynamicResource ScrimBrush}"/>
+        <Style.Animations>
+            <Animation Duration="0:0:0.15" FillMode="Both">
+                <KeyFrame Cue="0%"><Setter Property="Opacity" Value="0"/></KeyFrame>
+                <KeyFrame Cue="100%"><Setter Property="Opacity" Value="1"/></KeyFrame>
+            </Animation>
+        </Style.Animations>
+    </Style>
+    <Style Selector="Border.popin">
+        <Style.Animations>
+            <Animation Duration="0:0:0.18" Easing="CubicEaseOut" FillMode="Both">
+                <KeyFrame Cue="0%">
+                    <Setter Property="Opacity" Value="0"/>
+                    <Setter Property="TranslateTransform.Y" Value="-8"/>
+                </KeyFrame>
+                <KeyFrame Cue="100%">
+                    <Setter Property="Opacity" Value="1"/>
+                    <Setter Property="TranslateTransform.Y" Value="0"/>
+                </KeyFrame>
+            </Animation>
+        </Style.Animations>
+    </Style>
+</Styles>

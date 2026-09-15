@@ -16,10 +16,30 @@ public partial class App : Application
     public override void Initialize()
     {
         AvaloniaXamlLoader.Load(this);
+        ApplySavedTheme();
+    }
+
+    /// <summary>Restores the theme the user picked last time; without a saved choice the OS preference applies.</summary>
+    private void ApplySavedTheme()
+    {
+        var settings = Services.UserSettings.Load();
+        RequestedThemeVariant = settings.Theme switch
+        {
+            "Dark" => Avalonia.Styling.ThemeVariant.Dark,
+            "Light" => Avalonia.Styling.ThemeVariant.Light,
+            _ => Avalonia.Styling.ThemeVariant.Default,
+        };
     }
 
     public override void OnFrameworkInitializationCompleted()
     {
+        // An exception in a command or event handler should not take the whole admin tool down.
+        Avalonia.Threading.Dispatcher.UIThread.UnhandledException += (_, e) =>
+        {
+            Program.WriteCrashLog(e.Exception);
+            e.Handled = true;
+        };
+
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
             // Avoid duplicate validations from both Avalonia and the CommunityToolkit. 
