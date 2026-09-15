@@ -46,6 +46,9 @@ namespace TomLabs.IISBlitz.App.Views
         {
             ApplyEditorTheme();
 
+            // The window is up: a freshly installed update may drop its rollback backup.
+            TomLabs.AutoUpdate.Updater.Current?.MarkHealthy();
+
             if (Vm is { } vm && _logSearchHighlighter != null)
             {
                 vm.SiteViewModel.PropertyChanged += (_, args) =>

@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.6.1 — unreleased
+
+- Changed: updates keep the previous executable until the new build shows its window; a build that fails to start is rolled back automatically.
+
 ## 0.6.0 — 2026-09-15
 
 - Added: in-app updates through TomLabs.AutoUpdate — the status bar offers "Update" when a newer build is

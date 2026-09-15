@@ -9,7 +9,7 @@
         <Title>IISBlitz</Title>
         <Authors>Tomas Bouda</Authors>
         <ApplicationIcon>Assets\lightning.ico</ApplicationIcon>
-        <VersionPrefix>0.6.0</VersionPrefix>
+        <VersionPrefix>0.6.1</VersionPrefix>
         <NoWarn>CA1416</NoWarn>
     </PropertyGroup>
 
