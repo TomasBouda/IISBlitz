@@ -58,6 +58,10 @@ public partial class SiteInfo : ObservableObject
     [ObservableProperty]
     private string _currentEnvironment = "Production";
 
+    /// <summary>What web.config actually says: the environment name, or "not set → Production".</summary>
+    [ObservableProperty]
+    private string _configuredEnvironmentText = string.Empty;
+
     [ObservableProperty]
     private ObservableCollection<string> _availableEnvironments = new();
 

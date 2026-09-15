@@ -562,21 +562,23 @@ public partial class SiteViewModel : ObservableObject
         }
     }
 
-    private string ReadEnvironmentFromWebConfig(string physicalPath)
+    /// <summary>ASPNETCORE_ENVIRONMENT from web.config, or null when the site does not set one (ASP.NET Core then runs as Production).</summary>
+    private static string? ReadEnvironmentFromWebConfig(string physicalPath)
     {
         var webConfigPath = Path.Combine(physicalPath, "web.config");
-        if (!File.Exists(webConfigPath)) return "Production";
+        if (!File.Exists(webConfigPath)) return null;
 
         try
         {
             var doc = XDocument.Load(webConfigPath);
             var envVar = doc.Descendants("environmentVariable")
                 .FirstOrDefault(e => (string?)e.Attribute("name") == "ASPNETCORE_ENVIRONMENT");
-            return (string?)envVar?.Attribute("value") ?? "Production";
+            var value = (string?)envVar?.Attribute("value");
+            return string.IsNullOrWhiteSpace(value) ? null : value;
         }
         catch
         {
-            return "Production";
+            return null;
         }
     }
 
@@ -619,6 +621,7 @@ public partial class SiteViewModel : ObservableObject
             doc.Save(webConfigPath);
 
             SelectedSite.CurrentEnvironment = env;
+            SelectedSite.ConfiguredEnvironmentText = env;
 
             // Reload web.config content in editor
             ReloadWebConfig();
@@ -1237,8 +1240,10 @@ public partial class SiteViewModel : ObservableObject
     {
         if (SelectedSite == null) return;
 
-        // Read environment from web.config
-        var currentEnv = ReadEnvironmentFromWebConfig(SelectedSite.PhysicalPath);
+        // Read environment from web.config; when unset ASP.NET Core behaves as Production.
+        var configuredEnv = ReadEnvironmentFromWebConfig(SelectedSite.PhysicalPath);
+        SelectedSite.ConfiguredEnvironmentText = configuredEnv ?? "not set → Production";
+        var currentEnv = configuredEnv ?? "Production";
 
         // Build available environments from appsettings files + defaults.
         // The list is assigned before the current value: replacing the list would otherwise reset the selection.

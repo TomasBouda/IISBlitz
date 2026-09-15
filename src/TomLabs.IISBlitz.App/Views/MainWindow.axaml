@@ -328,10 +328,10 @@
                                             <TextBlock Grid.Column="2" Classes="mono secondary" FontSize="11.5" VerticalAlignment="Center"
                                                        Text="{Binding SiteViewModel.SelectedSite.SelectedAppSettingsFile}" TextTrimming="CharacterEllipsis"/>
                                             <TextBlock Grid.Column="4" Classes="mono muted" FontSize="11" VerticalAlignment="Center"
-                                                       ToolTip.Tip="ASPNETCORE_ENVIRONMENT currently set in web.config">
+                                                       ToolTip.Tip="ASPNETCORE_ENVIRONMENT in web.config; when it is not set, ASP.NET Core runs as Production">
                                                 <TextBlock.Text>
                                                     <MultiBinding StringFormat="{}web.config: {0}">
-                                                        <Binding Path="SiteViewModel.SelectedSite.CurrentEnvironment"/>
+                                                        <Binding Path="SiteViewModel.SelectedSite.ConfiguredEnvironmentText"/>
                                                     </MultiBinding>
                                                 </TextBlock.Text>
                                             </TextBlock>

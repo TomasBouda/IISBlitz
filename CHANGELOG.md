@@ -7,6 +7,7 @@
   can be switched from the command palette.
 - Changed: releases and nightly builds are published by the shared workflow with an `update.json` manifest.
 - Removed: the Response tab (HTTP inspector and JS console capture).
+- Fixed: the appsettings toolbar no longer claims web.config sets Production when ASPNETCORE_ENVIRONMENT is absent; it shows "not set → Production".
 
 ## 0.5.0 — 2026-09-15
 
