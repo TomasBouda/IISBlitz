@@ -326,14 +326,28 @@
                                             <avalonia:Icon Grid.Column="0" Value="fa-solid fa-file-code" FontSize="12" Foreground="{DynamicResource TextMutedBrush}"/>
                                             <TextBlock Grid.Column="2" Classes="mono secondary" FontSize="11.5" VerticalAlignment="Center"
                                                        Text="{Binding SiteViewModel.SelectedSite.SelectedAppSettingsFile}" TextTrimming="CharacterEllipsis"/>
-                                            <TextBlock Grid.Column="4" Classes="muted" FontSize="11" Text="Environment" VerticalAlignment="Center"/>
+                                            <TextBlock Grid.Column="4" Classes="mono muted" FontSize="11" VerticalAlignment="Center"
+                                                       ToolTip.Tip="ASPNETCORE_ENVIRONMENT currently set in web.config">
+                                                <TextBlock.Text>
+                                                    <MultiBinding StringFormat="{}web.config: {0}">
+                                                        <Binding Path="SiteViewModel.SelectedSite.CurrentEnvironment"/>
+                                                    </MultiBinding>
+                                                </TextBlock.Text>
+                                            </TextBlock>
                                             <ListBox Grid.Column="6" Classes="segmented"
-                                                     ItemsSource="{Binding SiteViewModel.SelectedSite.AvailableEnvironments}"
-                                                     SelectedItem="{Binding SiteViewModel.SelectedSite.CurrentEnvironment}"/>
+                                                     ItemsSource="{Binding SiteViewModel.SelectedSite.AppSettingsFiles}"
+                                                     SelectedItem="{Binding SiteViewModel.SelectedSite.SelectedAppSettingsFile}">
+                                                <ListBox.ItemTemplate>
+                                                    <DataTemplate x:DataType="x:String">
+                                                        <TextBlock Text="{Binding Converter={x:Static converters:AppSettingsLabelConverter.Instance}}" ToolTip.Tip="{Binding}"/>
+                                                    </DataTemplate>
+                                                </ListBox.ItemTemplate>
+                                            </ListBox>
                                             <Button Grid.Column="8" Padding="8,4"
                                                     Command="{Binding SiteViewModel.SetEnvironmentCmd}"
-                                                    CommandParameter="{Binding SiteViewModel.SelectedSite.CurrentEnvironment}"
-                                                    ToolTip.Tip="Write ASPNETCORE_ENVIRONMENT to web.config (selecting a chip only previews that environment's appsettings file)">
+                                                    CommandParameter="{Binding SiteViewModel.SelectedAppSettingsEnvironment}"
+                                                    IsEnabled="{Binding SiteViewModel.CanApplySelectedEnvironment}"
+                                                    ToolTip.Tip="Set ASPNETCORE_ENVIRONMENT in web.config to the selected file's environment">
                                                 <StackPanel><avalonia:Icon Value="fa-solid fa-check" FontSize="10"/><TextBlock Text="Apply to web.config"/></StackPanel>
                                             </Button>
                                             <Button Grid.Column="10" Classes="icon" Command="{Binding SiteViewModel.ReloadAppSettingsCmd}" ToolTip.Tip="Reload from disk">

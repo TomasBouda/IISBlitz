@@ -243,29 +243,42 @@ public partial class SiteViewModel : ObservableObject
         ApplyFilter();
     }
 
-    /// <summary>Picking an environment chip previews that environment's appsettings file; Apply writes web.config.</summary>
+    /// <summary>Picking a file chip loads that appsettings file into the editor; Apply writes its environment to web.config.</summary>
     private void OnSelectedSitePropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
     {
-        if (_loadingSite || e.PropertyName != nameof(SiteInfo.CurrentEnvironment)) return;
-        if (SelectedSite is { CurrentEnvironment: { Length: > 0 } env })
-            LoadAppSettingsForEnvironment(env);
+        if (e.PropertyName != nameof(SiteInfo.SelectedAppSettingsFile)) return;
+        OnPropertyChanged(nameof(SelectedAppSettingsEnvironment));
+        OnPropertyChanged(nameof(CanApplySelectedEnvironment));
+        if (!_loadingSite && SelectedSite?.SelectedAppSettingsFile is { Length: > 0 })
+            LoadSelectedAppSettingsFile();
     }
 
-    private void LoadAppSettingsForEnvironment(string env)
+    /// <summary>Environment encoded in the selected file name ("appsettings.Production.json" → "Production"); null for the base file.</summary>
+    public string? SelectedAppSettingsEnvironment => EnvironmentFromFileName(SelectedSite?.SelectedAppSettingsFile);
+
+    public bool CanApplySelectedEnvironment => SelectedAppSettingsEnvironment != null;
+
+    private static string? EnvironmentFromFileName(string? fileName)
     {
-        if (SelectedSite == null) return;
+        if (fileName == null || !fileName.StartsWith("appsettings.", StringComparison.OrdinalIgnoreCase)
+            || !fileName.EndsWith(".json", StringComparison.OrdinalIgnoreCase))
+            return null;
+        var env = fileName["appsettings.".Length..^".json".Length];
+        return env.Length > 0 ? env : null;
+    }
 
-        var settingsFile = env.Equals("Production", StringComparison.OrdinalIgnoreCase)
-            ? "appsettings.json"
-            : $"appsettings.{env}.json";
+    private static string FileNameForEnvironment(string env) => $"appsettings.{env}.json";
 
-        SelectedSite.SelectedAppSettingsFile = settingsFile;
+    private void LoadSelectedAppSettingsFile()
+    {
+        if (SelectedSite?.SelectedAppSettingsFile is not { Length: > 0 } settingsFile) return;
+
         var settingsPath = Path.Combine(SelectedSite.PhysicalPath, settingsFile);
         try
         {
             SelectedSite.AppSettingsContent = File.Exists(settingsPath)
                 ? File.ReadAllText(settingsPath)
-                : $"// File not found: {settingsFile}";
+                : $"// {settingsFile} does not exist yet — Save creates it.\n{{\n}}";
         }
         catch (Exception ex)
         {
@@ -609,7 +622,7 @@ public partial class SiteViewModel : ObservableObject
 
             // Reload web.config content in editor
             ReloadWebConfig();
-            LoadAppSettingsForEnvironment(env);
+            SelectedSite.SelectedAppSettingsFile = FileNameForEnvironment(env);
         }
         catch (Exception ex)
         {
@@ -1249,43 +1262,20 @@ public partial class SiteViewModel : ObservableObject
             envs.Distinct(StringComparer.OrdinalIgnoreCase).OrderBy(e => e));
         SelectedSite.CurrentEnvironment = currentEnv;
 
-        // Load appsettings based on environment
-        var settingsFile = currentEnv.Equals("Production", StringComparison.OrdinalIgnoreCase)
-            ? "appsettings.json"
-            : $"appsettings.{currentEnv}.json";
-        SelectedSite.SelectedAppSettingsFile = settingsFile;
-
-        // Discover all appsettings*.json files
-        try
+        // File chips: the base file, Development and Production always, plus whatever else exists on disk.
+        // The list is assigned before the selection: replacing it afterwards would reset the selection to null.
+        var files = new List<string> { "appsettings.json", FileNameForEnvironment("Development"), FileNameForEnvironment("Production") };
+        foreach (var env in envs)
         {
-            var files = Directory.GetFiles(SelectedSite.PhysicalPath, "appsettings*.json")
-                .Select(Path.GetFileName)
-                .Where(f => f != null)
-                .Cast<string>()
-                .OrderBy(f => f)
-                .ToList();
+            var name = FileNameForEnvironment(env);
+            if (!files.Contains(name, StringComparer.OrdinalIgnoreCase))
+                files.Add(name);
+        }
+        SelectedSite.AppSettingsFiles = new ObservableCollection<string>(files);
 
-            SelectedSite.AppSettingsFiles = new ObservableCollection<string>(files);
-        }
-        catch
-        {
-            SelectedSite.AppSettingsFiles = new ObservableCollection<string>(["appsettings.json"]);
-        }
-
-        try
-        {
-            var appSettingsPath = Path.Combine(SelectedSite.PhysicalPath, settingsFile);
-            if (!File.Exists(appSettingsPath))
-                appSettingsPath = Path.Combine(SelectedSite.PhysicalPath, "appsettings.json");
-
-            SelectedSite.AppSettingsContent = File.Exists(appSettingsPath)
-                ? File.ReadAllText(appSettingsPath)
-                : "// File not found";
-        }
-        catch (Exception ex)
-        {
-            SelectedSite.AppSettingsContent = $"// Error: {ex.Message}";
-        }
+        // Open the file of the environment web.config currently points to.
+        SelectedSite.SelectedAppSettingsFile = FileNameForEnvironment(currentEnv);
+        LoadSelectedAppSettingsFile();
 
         try
         {
