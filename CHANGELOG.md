@@ -6,6 +6,7 @@
   on GitHub Releases (nightly builds follow the nightly pre-release, releases follow stable); the channel
   can be switched from the command palette.
 - Changed: releases and nightly builds are published by the shared workflow with an `update.json` manifest.
+- Removed: the Response tab (HTTP inspector and JS console capture).
 
 ## 0.5.0 — 2026-09-15
 

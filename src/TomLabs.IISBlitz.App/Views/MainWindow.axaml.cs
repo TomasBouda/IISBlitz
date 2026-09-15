@@ -21,7 +21,6 @@ namespace TomLabs.IISBlitz.App.Views
         private SearchHighlightTransformer? _logSearchHighlighter;
         private TextMate.Installation? _jsonTextMate;
         private TextMate.Installation? _xmlTextMate;
-        private TextMate.Installation? _htmlTextMate;
 
         public MainWindow()
         {
@@ -209,8 +208,6 @@ namespace TomLabs.IISBlitz.App.Views
             _xmlTextMate = WebConfigEditor.InstallTextMate(registry);
             _xmlTextMate.SetGrammar(registry.GetScopeByLanguageId("xml"));
 
-            _htmlTextMate = ResponseBodyViewer.InstallTextMate(registry);
-            _htmlTextMate.SetGrammar(registry.GetScopeByLanguageId("html"));
         }
 
         /// <summary>
@@ -227,14 +224,13 @@ namespace TomLabs.IISBlitz.App.Views
             {
                 _jsonTextMate?.SetTheme(theme);
                 _xmlTextMate?.SetTheme(theme);
-                _htmlTextMate?.SetTheme(theme);
             }
             catch (Exception ex)
             {
                 Console.Error.WriteLine($"Failed to switch editor colour theme: {ex.Message}");
             }
 
-            foreach (var editor in new[] { AppSettingsEditor, WebConfigEditor, ResponseBodyViewer, LogViewer })
+            foreach (var editor in new[] { AppSettingsEditor, WebConfigEditor, LogViewer })
                 ApplyEditorChrome(editor);
         }
 

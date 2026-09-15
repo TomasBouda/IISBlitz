@@ -33,11 +33,6 @@ A fast, modern desktop app for managing IIS websites on Windows. Built with **Av
 - **Cross-file log search** — search across all log files with match count per file and text highlighting
 - **Windows Event Log** — IIS/ASP.NET events from last 24h with level filtering
 
-### 🌐 HTTP Inspector
-- Fetch site HTTP response with headers, status, timing
-- Page meta info (title, description, generator, server, X-Powered-By)
-- Full response body with HTML syntax highlighting
-
 ### 🎨 UI
 - **Command palette** — `Ctrl+K` fuzzy-searches sites, tabs and actions (recycle, restart, ping, open folder, …)
 - Dark / light theme that follows the OS by default; the toggle (`Ctrl+Shift+L`) remembers your choice

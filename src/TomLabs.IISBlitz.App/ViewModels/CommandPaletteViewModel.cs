@@ -95,7 +95,6 @@ public partial class CommandPaletteViewModel : ObservableObject
             _all.Add(new PaletteItem("Actions", "fa-solid fa-copy", "Copy physical path", site.PhysicalPath, "", () => vm.CopyPathCmd.Execute(null)));
             _all.Add(new PaletteItem("Actions", "fa-solid fa-floppy-disk", "Save appsettings.json", siteName, "Ctrl+S", () => vm.SaveAppSettingsCmd.Execute(null)));
             _all.Add(new PaletteItem("Actions", "fa-solid fa-floppy-disk", "Save web.config", siteName, "Ctrl+S", () => vm.SaveWebConfigCmd.Execute(null)));
-            _all.Add(new PaletteItem("Actions", "fa-solid fa-download", "Fetch HTTP response", site.Url ?? string.Empty, "", () => { _main.SelectedTabIndex = 6; vm.FetchSiteResponseCmd.Execute(null); }));
             _all.Add(new PaletteItem("Actions", "fa-solid fa-calendar", "Load Windows events", "last 24 h", "", () => { _main.SelectedTabIndex = 5; vm.LoadEventLogCmd.Execute(null); }));
         }
 
@@ -106,7 +105,7 @@ public partial class CommandPaletteViewModel : ObservableObject
             _all.Add(new PaletteItem("Jump to", "fa-solid fa-globe", s.Name, $"{s.AppPool} · {state}", "", () => vm.SelectedSite = captured));
         }
 
-        var tabs = new[] { "Overview", "appsettings.json", "web.config", "Permissions", "Logs", "Events", "Response" };
+        var tabs = new[] { "Overview", "appsettings.json", "web.config", "Permissions", "Logs", "Events" };
         for (var i = 0; i < tabs.Length; i++)
         {
             var index = i;
