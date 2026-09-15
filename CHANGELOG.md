@@ -3,6 +3,7 @@
 ## 0.6.1 — unreleased
 
 - Changed: updates keep the previous executable until the new build shows its window; a build that fails to start is rolled back automatically.
+- Changed: update manifests are signed; the app only installs builds signed by the release pipeline.
 
 ## 0.6.0 — 2026-09-15
 

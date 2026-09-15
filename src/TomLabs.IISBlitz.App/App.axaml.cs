@@ -93,6 +93,15 @@ public partial class App : Application
                 s.Save();
             },
             ExitApplication = () => desktop.Shutdown(),
+            // Manifests must be signed by the CI key (UPDATE_SIGNING_KEY secret); this is the matching public key.
+            PublicKeyPem =
+                "-----BEGIN PUBLIC KEY-----" + "
+" +
+                "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEr7DrQwulUeVzVelk3L9CM39ATGc7" + "
+" +
+                "lnm1GwBK2g2HHRj+NF8Tq1sRToA4BfS3sHWJsUci0+LClMnhk8LtOBdnOw==" + "
+" +
+                "-----END PUBLIC KEY-----",
             Log = message => Console.Error.WriteLine(message),
         });
     }
