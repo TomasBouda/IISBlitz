@@ -314,7 +314,7 @@
         <Setter Property="VerticalAlignment" Value="Center"/>
     </Style>
 
-    <!-- The one highlighted action (Ping, Save). -->
+    <!-- The one highlighted action (Save, Fetch). -->
     <Style Selector="Button.accent">
         <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}"/>
         <Setter Property="Background" Value="{DynamicResource AccentSoftBrush}"/>
@@ -638,30 +638,6 @@
                 <KeyFrame Cue="100%">
                     <Setter Property="Opacity" Value="1"/>
                     <Setter Property="TranslateTransform.Y" Value="0"/>
-                </KeyFrame>
-            </Animation>
-        </Style.Animations>
-    </Style>
-
-    <!-- Amber highlight sweeping across the ping card while a request is in flight. -->
-    <Style Selector="Border.sweep">
-        <Setter Property="Width" Value="90"/>
-        <Setter Property="HorizontalAlignment" Value="Left"/>
-        <Setter Property="IsHitTestVisible" Value="False"/>
-        <Setter Property="Background">
-            <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,0%">
-                <GradientStop Offset="0" Color="#00F5B400"/>
-                <GradientStop Offset="0.5" Color="#40F5B400"/>
-                <GradientStop Offset="1" Color="#00F5B400"/>
-            </LinearGradientBrush>
-        </Setter>
-        <Style.Animations>
-            <Animation Duration="0:0:1.8" IterationCount="Infinite">
-                <KeyFrame Cue="0%">
-                    <Setter Property="TranslateTransform.X" Value="-100"/>
-                </KeyFrame>
-                <KeyFrame Cue="100%">
-                    <Setter Property="TranslateTransform.X" Value="360"/>
                 </KeyFrame>
             </Animation>
         </Style.Animations>

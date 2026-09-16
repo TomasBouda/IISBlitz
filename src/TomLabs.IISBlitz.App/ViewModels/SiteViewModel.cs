@@ -51,9 +51,6 @@ public partial class SiteViewModel : ObservableObject
     private string _statusText = string.Empty;
 
     [ObservableProperty]
-    private string _healthCheckResult = string.Empty;
-
-    [ObservableProperty]
     private string _logSearchText = string.Empty;
 
     [ObservableProperty]
@@ -72,12 +69,6 @@ public partial class SiteViewModel : ObservableObject
     private ObservableCollection<EventLogItem> _eventLogEntries = new();
 
     [ObservableProperty]
-    private ObservableCollection<HealthCheckEntry> _healthCheckHistory = new();
-
-    [ObservableProperty]
-    private List<double> _responseTimeValues = new();
-
-    [ObservableProperty]
     private string _eventLogFilter = "All";
 
     [ObservableProperty]
@@ -88,14 +79,6 @@ public partial class SiteViewModel : ObservableObject
 
     [ObservableProperty]
     private string _newPermissionType = "Allow";
-
-    /// <summary>True while a health check (single or series) is in flight; drives the sweep animation on the ping card.</summary>
-    [ObservableProperty]
-    private bool _isPinging;
-
-    /// <summary>Compact "200 · 38 ms" summary of the most recent ping for the overview card.</summary>
-    [ObservableProperty]
-    private string _lastPingText = "—";
 
     /// <summary>Total working set of the selected site's worker processes, formatted for the overview card.</summary>
     [ObservableProperty]
@@ -169,7 +152,6 @@ public partial class SiteViewModel : ObservableObject
     public ICommand ReloadAppSettingsCmd { get; }
     public ICommand ReloadWebConfigCmd { get; }
     public ICommand RecyclePoolCmd { get; }
-    public ICommand HealthCheckCmd { get; }
     public ICommand ViewLogCmd { get; }
     public ICommand ToggleThemeCmd { get; }
     public ICommand LoadWorkerProcessesCmd { get; }
@@ -179,7 +161,6 @@ public partial class SiteViewModel : ObservableObject
     public ICommand ClearLogSearchCmd { get; }
     public ICommand LoadEventLogCmd { get; }
     public ICommand FilterEventLogCmd { get; }
-    public ICommand RunHealthCheckSeriesCmd { get; }
     public ICommand LoadPermissionsCmd { get; }
     public ICommand AddPermissionCmd { get; }
     public ICommand RemovePermissionCmd { get; }
@@ -206,7 +187,6 @@ public partial class SiteViewModel : ObservableObject
         ReloadAppSettingsCmd = ReactiveCommand.Create(ReloadAppSettings);
         ReloadWebConfigCmd = ReactiveCommand.Create(ReloadWebConfig);
         RecyclePoolCmd = ReactiveCommand.Create(RecycleAppPool);
-        HealthCheckCmd = ReactiveCommand.Create(HealthCheck);
         ViewLogCmd = ReactiveCommand.Create<string>(ViewLog);
         ToggleThemeCmd = ReactiveCommand.Create(ToggleTheme);
         LoadWorkerProcessesCmd = ReactiveCommand.Create(LoadWorkerProcesses);
@@ -216,7 +196,6 @@ public partial class SiteViewModel : ObservableObject
         ClearLogSearchCmd = ReactiveCommand.Create(ClearLogSearch);
         LoadEventLogCmd = ReactiveCommand.Create(LoadEventLog);
         FilterEventLogCmd = ReactiveCommand.Create<string?>(FilterEventLog);
-        RunHealthCheckSeriesCmd = ReactiveCommand.Create(RunHealthCheckSeries);
         LoadPermissionsCmd = ReactiveCommand.Create(LoadPermissions);
         AddPermissionCmd = ReactiveCommand.Create(AddPermission);
         RemovePermissionCmd = ReactiveCommand.Create<string?>(RemovePermission);
@@ -361,15 +340,11 @@ public partial class SiteViewModel : ObservableObject
     private void ClearSiteContext()
     {
         // Clear ViewModel-level state that doesn't belong to SiteInfo
-        HealthCheckResult = string.Empty;
-        LastPingText = "—";
         WorkerMemoryText = "—";
         SelectedEvent = null;
         HasHealthEndpoint = null;
         HealthEndpointStatus = "—";
         HealthEndpointDetail = string.Empty;
-        HealthCheckHistory = new ObservableCollection<HealthCheckEntry>();
-        ResponseTimeValues = new List<double>();
         EventLogEntries = new ObservableCollection<EventLogItem>();
         LogSearchText = string.Empty;
         LogSearchStatus = string.Empty;
@@ -728,70 +703,6 @@ public partial class SiteViewModel : ObservableObject
         LoadEventLog();
     }
 
-    private async void RunHealthCheckSeries()
-    {
-        if (SelectedSite?.Url == null)
-        {
-            HealthCheckResult = "No URL available";
-            return;
-        }
-
-        HealthCheckResult = "Running series (5 pings)...";
-        IsPinging = true;
-        var history = new List<HealthCheckEntry>();
-
-        try
-        {
-            using var handler = new HttpClientHandler
-            {
-                ServerCertificateCustomValidationCallback = (_, _, _, _) => true
-            };
-            using var client = new HttpClient(handler) { Timeout = TimeSpan.FromSeconds(10) };
-
-            for (int i = 0; i < 5; i++)
-            {
-                try
-                {
-                    var sw = Stopwatch.StartNew();
-                    var response = await client.GetAsync(SelectedSite.Url);
-                    sw.Stop();
-                    history.Add(new HealthCheckEntry(DateTime.Now, (int)response.StatusCode, sw.ElapsedMilliseconds));
-                }
-                catch (TaskCanceledException)
-                {
-                    history.Add(new HealthCheckEntry(DateTime.Now, 0, 10000));
-                }
-                catch
-                {
-                    history.Add(new HealthCheckEntry(DateTime.Now, -1, 0));
-                }
-
-                if (i < 4)
-                    await Task.Delay(1000);
-            }
-
-            HealthCheckHistory = new ObservableCollection<HealthCheckEntry>(
-                HealthCheckHistory.Concat(history).TakeLast(20));
-
-            ResponseTimeValues = HealthCheckHistory
-                .Select(h => (double)h.ResponseTimeMs)
-                .ToList();
-
-            var avg = history.Average(h => h.ResponseTimeMs);
-            var last = history[^1];
-            HealthCheckResult = $"{last.StatusCode} — avg: {avg:F0}ms, last: {last.ResponseTimeMs}ms ({HealthCheckHistory.Count} total)";
-            LastPingText = $"{last.StatusCode} · {last.ResponseTimeMs} ms";
-        }
-        catch (Exception ex)
-        {
-            HealthCheckResult = $"Error: {ex.Message}";
-        }
-        finally
-        {
-            IsPinging = false;
-        }
-    }
-
     private void LoadWorkerProcesses()
     {
         if (SelectedSite == null) return;
@@ -905,53 +816,6 @@ public partial class SiteViewModel : ObservableObject
         catch (Exception ex)
         {
             Console.WriteLine($"Failed to recycle app pool: {ex.Message}");
-        }
-    }
-
-    private async void HealthCheck()
-    {
-        if (SelectedSite?.Url == null)
-        {
-            HealthCheckResult = "No URL available";
-            return;
-        }
-
-        HealthCheckResult = "Checking...";
-        IsPinging = true;
-        try
-        {
-            using var handler = new HttpClientHandler
-            {
-                ServerCertificateCustomValidationCallback = (_, _, _, _) => true
-            };
-            using var client = new HttpClient(handler) { Timeout = TimeSpan.FromSeconds(10) };
-            var sw = Stopwatch.StartNew();
-            var response = await client.GetAsync(SelectedSite.Url);
-            sw.Stop();
-
-            var entry = new HealthCheckEntry(DateTime.Now, (int)response.StatusCode, sw.ElapsedMilliseconds);
-            HealthCheckHistory = new ObservableCollection<HealthCheckEntry>(
-                HealthCheckHistory.Append(entry).TakeLast(20));
-            ResponseTimeValues = HealthCheckHistory
-                .Select(h => (double)h.ResponseTimeMs)
-                .ToList();
-
-            HealthCheckResult = $"{(int)response.StatusCode} {response.StatusCode} — {sw.ElapsedMilliseconds}ms";
-            LastPingText = $"{(int)response.StatusCode} · {sw.ElapsedMilliseconds} ms";
-        }
-        catch (TaskCanceledException)
-        {
-            HealthCheckResult = "Timeout (10s)";
-            LastPingText = "timeout";
-        }
-        catch (Exception ex)
-        {
-            HealthCheckResult = $"Error: {ex.Message}";
-            LastPingText = "error";
-        }
-        finally
-        {
-            IsPinging = false;
         }
     }
 

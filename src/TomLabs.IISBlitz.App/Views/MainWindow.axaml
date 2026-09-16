@@ -181,10 +181,6 @@
                                 <Button Classes="icon" Command="{Binding SiteViewModel.CopyPathCmd}" ToolTip.Tip="Copy physical path">
                                     <avalonia:Icon Value="fa-solid fa-copy" FontSize="13"/>
                                 </Button>
-                                <Border Classes="vsep"/>
-                                <Button Classes="accent" Command="{Binding SiteViewModel.HealthCheckCmd}" ToolTip.Tip="HTTP health check">
-                                    <StackPanel><avalonia:Icon Value="fa-solid fa-heart-pulse" FontSize="11"/><TextBlock Text="Ping"/></StackPanel>
-                                </Button>
                             </StackPanel>
                         </Grid>
 
@@ -195,7 +191,7 @@
                             <TabItem Header="Overview">
                                 <ScrollViewer>
                                     <StackPanel Margin="18,16" Spacing="14">
-                                        <Grid ColumnDefinitions="*,10,*,10,*,10,*,10,*" Classes="fade-in d1">
+                                        <Grid ColumnDefinitions="*,10,*,10,*,10,*" Classes="fade-in d1">
                                             <Border Grid.Column="0" Classes="card">
                                                 <StackPanel Spacing="4">
                                                     <TextBlock Classes="label" Text="Site state"/>
@@ -227,39 +223,7 @@
                                                     <TextBlock Classes="mono muted" FontSize="10.5" Text="{Binding SiteViewModel.HealthEndpointDetail}" TextTrimming="CharacterEllipsis"/>
                                                 </StackPanel>
                                             </Border>
-                                            <Border Grid.Column="8" Classes="card accent" ClipToBounds="True" Padding="0">
-                                                <Panel>
-                                                    <Border Classes="sweep" IsVisible="{Binding SiteViewModel.IsPinging}"/>
-                                                    <StackPanel Spacing="4" Margin="14,12">
-                                                        <TextBlock Classes="label" Text="Last ping" IsVisible="{Binding !SiteViewModel.IsPinging}"/>
-                                                        <TextBlock Classes="label" Text="Pinging…" IsVisible="{Binding SiteViewModel.IsPinging}"/>
-                                                        <TextBlock Classes="value accent" Text="{Binding SiteViewModel.LastPingText}"/>
-                                                    </StackPanel>
-                                                </Panel>
-                                            </Border>
                                         </Grid>
-
-                                        <Border Classes="card fade-in d2">
-                                            <StackPanel Spacing="8">
-                                                <Grid ColumnDefinitions="Auto,*,Auto,Auto">
-                                                    <TextBlock Grid.Column="0" Classes="h" Text="Response time" VerticalAlignment="Center"/>
-                                                    <TextBlock Grid.Column="1" Classes="mono muted" FontSize="10.5" Margin="12,0,0,0" VerticalAlignment="Center"
-                                                               Text="{Binding SiteViewModel.HealthCheckResult}"/>
-                                                    <Button Grid.Column="2" Classes="icon small" Command="{Binding SiteViewModel.HealthCheckCmd}" ToolTip.Tip="Single ping">
-                                                        <avalonia:Icon Value="fa-solid fa-heart-pulse" FontSize="11"/>
-                                                    </Button>
-                                                    <Button Grid.Column="3" Padding="8,3" Margin="4,0,0,0" Command="{Binding SiteViewModel.RunHealthCheckSeriesCmd}" ToolTip.Tip="Run 5 pings, one second apart">
-                                                        <StackPanel Spacing="5"><avalonia:Icon Value="fa-solid fa-chart-line" FontSize="10"/><TextBlock Text="5× ping" FontSize="11"/></StackPanel>
-                                                    </Button>
-                                                </Grid>
-                                                <controls:SparklineChart Height="86"
-                                                                          Values="{Binding SiteViewModel.ResponseTimeValues}"
-                                                                          LineBrush="{DynamicResource AccentBrush}"
-                                                                          FillBrush="{DynamicResource AccentSoftBrush}"
-                                                                          TextBrush="{DynamicResource TextMutedBrush}"
-                                                                          GridBrush="{DynamicResource HairlineStrongBrush}"/>
-                                            </StackPanel>
-                                        </Border>
 
                                         <Grid ColumnDefinitions="*,10,*" Classes="fade-in d3">
                                             <Border Grid.Column="0" Classes="table">
@@ -601,7 +565,7 @@
 
             <!-- ===== Status bar ===== -->
             <Border Grid.Row="2" Classes="hairline-t" Padding="18,6">
-                <Grid ColumnDefinitions="Auto,16,Auto,*,Auto,16,Auto">
+                <Grid ColumnDefinitions="Auto,16,Auto,*,Auto">
                     <TextBlock Grid.Column="0" Classes="muted" FontSize="11" VerticalAlignment="Center">
                         <TextBlock.Text>
                             <MultiBinding StringFormat="{}{0} sites · {1} running">
@@ -611,8 +575,7 @@
                         </TextBlock.Text>
                     </TextBlock>
                     <update:UpdateBanner Grid.Column="2" VerticalAlignment="Center"/>
-                    <TextBlock Grid.Column="4" Classes="mono accent" FontSize="11" Text="{Binding SiteViewModel.HealthCheckResult}" VerticalAlignment="Center"/>
-                    <TextBlock Grid.Column="6" Classes="mono muted" FontSize="11" Text="{Binding SiteViewModel.StatusText}" VerticalAlignment="Center"/>
+                    <TextBlock Grid.Column="4" Classes="mono muted" FontSize="11" Text="{Binding SiteViewModel.StatusText}" VerticalAlignment="Center"/>
                 </Grid>
             </Border>
         </Grid>

@@ -14,7 +14,7 @@ A fast, modern desktop app for managing IIS websites on Windows. Built with **Av
 - Start / Stop / Restart websites and application pools
 - Recycle app pool with one click
 - Browse site in default browser
-- HTTP health check with response time
+- Automatic GET /health probe showing the deployed version
 - Open physical path in Explorer
 
 ### 📝 Configuration Editing
@@ -24,7 +24,6 @@ A fast, modern desktop app for managing IIS websites on Windows. Built with **Av
 - Save & reload from disk
 
 ### 📊 Monitoring
-- **Response time chart** — sparkline graph from health check history (single ping or 5x series)
 - **Worker processes** — PID, state, memory usage per app pool
 - **SSL certificates** — subject, issuer, expiry, thumbprint for HTTPS bindings
 

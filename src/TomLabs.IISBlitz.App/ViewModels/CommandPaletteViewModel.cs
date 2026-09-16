@@ -88,8 +88,6 @@ public partial class CommandPaletteViewModel : ObservableObject
                 _all.Add(new PaletteItem("Actions", "fa-solid fa-stop", "Stop app pool", site.AppPool, "", () => vm.StopPoolCmd.Execute(null)));
             else
                 _all.Add(new PaletteItem("Actions", "fa-solid fa-play", "Start app pool", site.AppPool, "", () => vm.StartPoolCmd.Execute(null)));
-            _all.Add(new PaletteItem("Actions", "fa-solid fa-heart-pulse", "Ping site", site.Url ?? "no binding", "", () => vm.HealthCheckCmd.Execute(null)));
-            _all.Add(new PaletteItem("Actions", "fa-solid fa-chart-line", "Run 5 pings", "builds the response time chart", "", () => vm.RunHealthCheckSeriesCmd.Execute(null)));
             _all.Add(new PaletteItem("Actions", "fa-solid fa-globe", "Open in browser", site.Url ?? string.Empty, "", () => vm.BrowseSiteCmd.Execute(null)));
             _all.Add(new PaletteItem("Actions", "fa-solid fa-folder-open", "Open folder", site.PhysicalPath, "", () => vm.OpenWebFolderCmd.Execute(null)));
             _all.Add(new PaletteItem("Actions", "fa-solid fa-copy", "Copy physical path", site.PhysicalPath, "", () => vm.CopyPathCmd.Execute(null)));
