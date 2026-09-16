@@ -33,11 +33,11 @@ A fast, modern desktop app for managing IIS websites on Windows. Built with **Av
 - **Windows Event Log** — IIS/ASP.NET events from last 24h with level filtering
 
 ### 🎨 UI
-- **Command palette** — `Ctrl+K` fuzzy-searches sites, tabs and actions (recycle, restart, ping, open folder, …)
+- **Command palette** — `Ctrl+K` fuzzy-searches sites, tabs and actions (recycle, restart, open folder, …)
 - Dark / light theme that follows the OS by default; the toggle (`Ctrl+Shift+L`) remembers your choice
 - Site search & filter
 - Keyboard shortcuts: `F5` refresh, `Ctrl+S` save, `Ctrl+R` recycle, `Ctrl+F` filter sites
-- Status bar with site count, running count and the last health check result
+- Status bar with site count, running count and the update banner
 - Version shown in the header, taken from the assembly
 
 ## Prerequisites
