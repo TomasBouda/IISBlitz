@@ -93,6 +93,11 @@ public partial class CommandPaletteViewModel : ObservableObject
             _all.Add(new PaletteItem("Actions", "fa-solid fa-copy", "Copy physical path", site.PhysicalPath, "", () => vm.CopyPathCmd.Execute(null)));
             _all.Add(new PaletteItem("Actions", "fa-solid fa-floppy-disk", "Save appsettings.json", siteName, "Ctrl+S", () => vm.SaveAppSettingsCmd.Execute(null)));
             _all.Add(new PaletteItem("Actions", "fa-solid fa-floppy-disk", "Save web.config", siteName, "Ctrl+S", () => vm.SaveWebConfigCmd.Execute(null)));
+            foreach (var worker in site.PoolStats?.Workers ?? Enumerable.Empty<Models.WorkerProcessInfo>())
+            {
+                var pid = worker.Pid;
+                _all.Add(new PaletteItem("Actions", "fa-solid fa-download", $"Memory dump of w3wp {pid}", $"{site.AppPool} · {worker.MemoryText}", "", () => vm.DumpWorkerCmd.Execute(pid)));
+            }
             _all.Add(new PaletteItem("Actions", "fa-solid fa-calendar", "Load Windows events", "last 24 h", "", () => { _main.SelectedTabIndex = 5; vm.LoadEventLogCmd.Execute(null); }));
         }
 

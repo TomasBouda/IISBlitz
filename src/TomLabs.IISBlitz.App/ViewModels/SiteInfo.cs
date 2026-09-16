@@ -40,8 +40,9 @@ public partial class SiteInfo : ObservableObject
     [ObservableProperty]
     private string? _selectedLogPath;
 
+    /// <summary>Live CPU / memory of the app pool, shared with every site on the same pool.</summary>
     [ObservableProperty]
-    private ObservableCollection<WorkerProcessInfo> _workerProcesses = new();
+    private PoolStats? _poolStats;
 
     [ObservableProperty]
     private ObservableCollection<CertificateInfo> _certificates = new();

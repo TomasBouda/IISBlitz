@@ -80,9 +80,17 @@ public partial class SiteViewModel : ObservableObject
     [ObservableProperty]
     private string _newPermissionType = "Allow";
 
-    /// <summary>Total working set of the selected site's worker processes, formatted for the overview card.</summary>
+    /// <summary>Progress / result line of the last memory dump ("Writing dump…", "Dump saved: …").</summary>
     [ObservableProperty]
-    private string _workerMemoryText = "—";
+    private string _dumpStatus = string.Empty;
+
+    [ObservableProperty]
+    private bool _isDumping;
+
+    [ObservableProperty]
+    private string? _lastDumpPath;
+
+    private readonly Services.ProcessMonitor _monitor = new(message => Console.Error.WriteLine(message));
 
     [ObservableProperty]
     private int _runningSiteCount;
@@ -154,7 +162,8 @@ public partial class SiteViewModel : ObservableObject
     public ICommand RecyclePoolCmd { get; }
     public ICommand ViewLogCmd { get; }
     public ICommand ToggleThemeCmd { get; }
-    public ICommand LoadWorkerProcessesCmd { get; }
+    public ICommand DumpWorkerCmd { get; }
+    public ICommand OpenDumpFolderCmd { get; }
     public ICommand SearchLogCmd { get; }
     public ICommand SetEnvironmentCmd { get; }
     public ICommand ViewSearchResultCmd { get; }
@@ -189,7 +198,8 @@ public partial class SiteViewModel : ObservableObject
         RecyclePoolCmd = ReactiveCommand.Create(RecycleAppPool);
         ViewLogCmd = ReactiveCommand.Create<string>(ViewLog);
         ToggleThemeCmd = ReactiveCommand.Create(ToggleTheme);
-        LoadWorkerProcessesCmd = ReactiveCommand.Create(LoadWorkerProcesses);
+        DumpWorkerCmd = ReactiveCommand.Create<int>(pid => _ = DumpWorkerAsync(pid));
+        OpenDumpFolderCmd = ReactiveCommand.Create(OpenDumpFolder);
         SearchLogCmd = ReactiveCommand.Create(SearchLog);
         SetEnvironmentCmd = ReactiveCommand.Create<string?>(SetEnvironment);
         ViewSearchResultCmd = ReactiveCommand.Create<string>(ViewLogFromSearch);
@@ -203,6 +213,43 @@ public partial class SiteViewModel : ObservableObject
         _serverManager = new ServerManager();
         LoadIISSites();
         ApplyFilter();
+        _monitor.Start();
+    }
+
+    private async Task DumpWorkerAsync(int pid)
+    {
+        if (IsDumping || SelectedSite == null) return;
+        IsDumping = true;
+        DumpStatus = $"Writing full memory dump of PID {pid}…";
+        try
+        {
+            var path = await Services.MemoryDumpService.DumpAsync(pid, SelectedSite.AppPool);
+            var size = new FileInfo(path).Length / 1048576.0;
+            LastDumpPath = path;
+            DumpStatus = $"Dump saved ({size:0} MB): {Path.GetFileName(path)}";
+            Services.MemoryDumpService.RevealInExplorer(path);
+        }
+        catch (Exception ex)
+        {
+            DumpStatus = $"Dump failed: {ex.Message}";
+        }
+        finally
+        {
+            IsDumping = false;
+        }
+    }
+
+    private void OpenDumpFolder()
+    {
+        try
+        {
+            Directory.CreateDirectory(Services.MemoryDumpService.DumpDirectory);
+            Process.Start(new ProcessStartInfo(Services.MemoryDumpService.DumpDirectory) { UseShellExecute = true });
+        }
+        catch (Exception ex)
+        {
+            DumpStatus = $"Cannot open the dump folder: {ex.Message}";
+        }
     }
 
     /// <summary>Picking a file chip loads that appsettings file into the editor; Apply writes its environment to web.config.</summary>
@@ -340,7 +387,8 @@ public partial class SiteViewModel : ObservableObject
     private void ClearSiteContext()
     {
         // Clear ViewModel-level state that doesn't belong to SiteInfo
-        WorkerMemoryText = "—";
+        DumpStatus = string.Empty;
+        LastDumpPath = null;
         SelectedEvent = null;
         HasHealthEndpoint = null;
         HealthEndpointStatus = "—";
@@ -703,42 +751,6 @@ public partial class SiteViewModel : ObservableObject
         LoadEventLog();
     }
 
-    private void LoadWorkerProcesses()
-    {
-        if (SelectedSite == null) return;
-        try
-        {
-            _serverManager = new ServerManager();
-            var appPool = _serverManager.ApplicationPools[SelectedSite.AppPool];
-            var workers = new ObservableCollection<WorkerProcessInfo>();
-
-            foreach (var wp in appPool.WorkerProcesses)
-            {
-                long memKb = 0;
-                try
-                {
-                    var proc = System.Diagnostics.Process.GetProcessById(wp.ProcessId);
-                    memKb = proc.WorkingSet64 / 1024;
-                }
-                catch { }
-
-                workers.Add(new WorkerProcessInfo(
-                    wp.ProcessId,
-                    SelectedSite.AppPool,
-                    wp.State.ToString(),
-                    memKb));
-            }
-
-            SelectedSite.WorkerProcesses = workers;
-            var totalKb = workers.Sum(w => w.MemoryKb);
-            WorkerMemoryText = workers.Count == 0 ? "—" : $"{totalKb / 1024} MB";
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Failed to load worker processes: {ex.Message}");
-        }
-    }
-
     private void StartWebsite()
     {
         if (SelectedSite == null) return;
@@ -889,6 +901,7 @@ public partial class SiteViewModel : ObservableObject
                         IsRunning = site.State == ObjectState.Started,
                         IsPoolRunning = appPool.State == ObjectState.Started,
                         AppPool = site.Applications[0].ApplicationPoolName,
+                        PoolStats = _monitor.GetOrCreate(site.Applications[0].ApplicationPoolName),
                         PhysicalPath = sitePath,
                         Bindings = bindings,
                         Logs = Directory.Exists(logsDir)
@@ -900,6 +913,7 @@ public partial class SiteViewModel : ObservableObject
                 {
                     existingSite.IsRunning = site.State == ObjectState.Started;
                     existingSite.IsPoolRunning = appPool.State == ObjectState.Started;
+                    existingSite.PoolStats = _monitor.GetOrCreate(site.Applications[0].ApplicationPoolName);
                     existingSite.Bindings = bindings;
                     existingSite.Logs = Directory.Exists(logsDir)
                         ? new ObservableCollection<string>(Directory.GetFiles(logsDir, "*.log", SearchOption.AllDirectories))
@@ -1048,7 +1062,6 @@ public partial class SiteViewModel : ObservableObject
         }
 
         LoadCertificates();
-        LoadWorkerProcesses();
         LoadPermissions();
     }
 

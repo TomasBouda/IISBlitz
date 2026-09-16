@@ -24,7 +24,8 @@ A fast, modern desktop app for managing IIS websites on Windows. Built with **Av
 - Save & reload from disk
 
 ### 📊 Monitoring
-- **Worker processes** — PID, state, memory usage per app pool
+- **Worker processes** — live CPU and memory per app pool (sidebar, overview cards, two-minute charts)
+- **Memory dump** — one click writes a full dump of a worker process to Documents\IISBlitz\dumps
 - **SSL certificates** — subject, issuer, expiry, thumbprint for HTTPS bindings
 
 ### 📋 Logs & Events

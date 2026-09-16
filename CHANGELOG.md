@@ -2,6 +2,8 @@
 
 ## 0.6.1 — unreleased
 
+- Added: live CPU and memory of every app pool's worker processes — in the sidebar, on the overview cards and as two-minute charts.
+- Added: one-click full memory dump of a worker process (Documents\IISBlitz\dumps), opens in Visual Studio, WinDbg or dotnet-dump.
 - Changed: updates keep the previous executable until the new build shows its window; a build that fails to start is rolled back automatically.
 - Changed: update manifests are signed; the app only installs builds signed by the release pipeline.
 - Removed: the Ping / 5× ping health check and the response time chart; the automatic GET /health probe on the overview stays.

@@ -106,7 +106,7 @@
                                  SelectedItem="{Binding SiteViewModel.SelectedSite}">
                             <ListBox.ItemTemplate>
                                 <DataTemplate x:DataType="vm:SiteInfo">
-                                    <Grid ColumnDefinitions="Auto,10,*">
+                                    <Grid ColumnDefinitions="Auto,10,*,8,Auto">
                                         <controls:StatusDot Grid.Column="0" VerticalAlignment="Center"
                                                             IsRunning="{Binding IsRunning}"
                                                             IsLive="{Binding $parent[ListBoxItem].IsSelected}"/>
@@ -117,6 +117,9 @@
                                             <TextBlock Text="{Binding Summary}" Classes="mono muted" FontSize="10.5"
                                                        TextTrimming="CharacterEllipsis"/>
                                         </StackPanel>
+                                        <TextBlock Grid.Column="4" Classes="mono muted" FontSize="10" VerticalAlignment="Bottom"
+                                                   Text="{Binding PoolStats.Summary}" IsVisible="{Binding PoolStats.HasWorkers, FallbackValue=False}"
+                                                   ToolTip.Tip="CPU · memory of the app pool's worker processes"/>
                                     </Grid>
                                 </DataTemplate>
                             </ListBox.ItemTemplate>
@@ -191,7 +194,7 @@
                             <TabItem Header="Overview">
                                 <ScrollViewer>
                                     <StackPanel Margin="18,16" Spacing="14">
-                                        <Grid ColumnDefinitions="*,10,*,10,*,10,*" Classes="fade-in d1">
+                                        <Grid ColumnDefinitions="*,10,*,10,*,10,*,10,*" Classes="fade-in d1">
                                             <Border Grid.Column="0" Classes="card">
                                                 <StackPanel Spacing="4">
                                                     <TextBlock Classes="label" Text="Site state"/>
@@ -206,13 +209,19 @@
                                                     <TextBlock Classes="value muted" Text="Stopped" IsVisible="{Binding !SiteViewModel.SelectedSite.IsPoolRunning}"/>
                                                 </StackPanel>
                                             </Border>
-                                            <Border Grid.Column="4" Classes="card">
+                                            <Border Grid.Column="4" Classes="card" ToolTip.Tip="Processor time of the pool's worker processes, all cores = 100 %">
                                                 <StackPanel Spacing="4">
-                                                    <TextBlock Classes="label" Text="Worker memory"/>
-                                                    <TextBlock Classes="value" Text="{Binding SiteViewModel.WorkerMemoryText}"/>
+                                                    <TextBlock Classes="label" Text="CPU"/>
+                                                    <TextBlock Classes="value" Text="{Binding SiteViewModel.SelectedSite.PoolStats.CpuText, FallbackValue=—}"/>
                                                 </StackPanel>
                                             </Border>
-                                            <Border Grid.Column="6" Classes="card" ToolTip.Tip="GET /health is probed automatically when a site is selected">
+                                            <Border Grid.Column="6" Classes="card" ToolTip.Tip="Working set of the pool's worker processes">
+                                                <StackPanel Spacing="4">
+                                                    <TextBlock Classes="label" Text="Memory"/>
+                                                    <TextBlock Classes="value" Text="{Binding SiteViewModel.SelectedSite.PoolStats.MemoryText, FallbackValue=—}"/>
+                                                </StackPanel>
+                                            </Border>
+                                            <Border Grid.Column="8" Classes="card" ToolTip.Tip="GET /health is probed automatically when a site is selected">
                                                 <StackPanel Spacing="4">
                                                     <TextBlock Classes="label" Text="Health endpoint"/>
                                                     <TextBlock Classes="value muted" Text="probing…" IsVisible="{Binding SiteViewModel.HasHealthEndpoint, Converter={x:Static ObjectConverters.IsNull}}"/>
@@ -221,6 +230,34 @@
                                                     <TextBlock Classes="value muted" Text="not exposed"
                                                                IsVisible="{Binding SiteViewModel.HasHealthEndpoint, Converter={x:Static BoolConverters.Not}, FallbackValue=False, TargetNullValue=False}"/>
                                                     <TextBlock Classes="mono muted" FontSize="10.5" Text="{Binding SiteViewModel.HealthEndpointDetail}" TextTrimming="CharacterEllipsis"/>
+                                                </StackPanel>
+                                            </Border>
+                                        </Grid>
+
+                                        <Grid ColumnDefinitions="*,10,*" Classes="fade-in d2">
+                                            <Border Grid.Column="0" Classes="card">
+                                                <StackPanel Spacing="6">
+                                                    <Grid ColumnDefinitions="*,Auto">
+                                                        <TextBlock Classes="h" Text="CPU · last 2 min"/>
+                                                        <TextBlock Grid.Column="1" Classes="mono muted" FontSize="10.5" Text="{Binding SiteViewModel.SelectedSite.PoolStats.PoolName, FallbackValue=''}"/>
+                                                    </Grid>
+                                                    <controls:SparklineChart Height="70" Unit="%" ValueFormat="0.0"
+                                                                              Values="{Binding SiteViewModel.SelectedSite.PoolStats.CpuHistorySnapshot}"
+                                                                              LineBrush="{DynamicResource AccentBrush}"
+                                                                              FillBrush="{DynamicResource AccentSoftBrush}"
+                                                                              TextBrush="{DynamicResource TextMutedBrush}"
+                                                                              GridBrush="{DynamicResource HairlineStrongBrush}"/>
+                                                </StackPanel>
+                                            </Border>
+                                            <Border Grid.Column="2" Classes="card">
+                                                <StackPanel Spacing="6">
+                                                    <TextBlock Classes="h" Text="Memory · last 2 min"/>
+                                                    <controls:SparklineChart Height="70" Unit="MB" ValueFormat="0"
+                                                                              Values="{Binding SiteViewModel.SelectedSite.PoolStats.MemoryHistorySnapshot}"
+                                                                              LineBrush="{DynamicResource RunningBrush}"
+                                                                              FillBrush="{DynamicResource RunningSoftBrush}"
+                                                                              TextBrush="{DynamicResource TextMutedBrush}"
+                                                                              GridBrush="{DynamicResource HairlineStrongBrush}"/>
                                                 </StackPanel>
                                             </Border>
                                         </Grid>
@@ -246,17 +283,34 @@
                                                     <Border DockPanel.Dock="Top" Classes="tablehead" Padding="12,4,6,4">
                                                         <Grid ColumnDefinitions="*,Auto">
                                                             <TextBlock Classes="section" Text="WORKER PROCESSES" VerticalAlignment="Center"/>
-                                                            <Button Grid.Column="1" Classes="icon small" Command="{Binding SiteViewModel.LoadWorkerProcessesCmd}" ToolTip.Tip="Refresh worker processes">
-                                                                <avalonia:Icon Value="fa-solid fa-arrows-rotate" FontSize="10"/>
+                                                            <Button Grid.Column="1" Classes="icon small" Command="{Binding SiteViewModel.OpenDumpFolderCmd}" ToolTip.Tip="Open the dump folder (Documents\IISBlitz\dumps)">
+                                                                <avalonia:Icon Value="fa-solid fa-folder-open" FontSize="10"/>
                                                             </Button>
                                                         </Grid>
                                                     </Border>
-                                                    <DataGrid Classes="mono" ItemsSource="{Binding SiteViewModel.SelectedSite.WorkerProcesses}" AutoGenerateColumns="False" MaxHeight="160">
+                                                    <Border DockPanel.Dock="Bottom" Classes="hairline-t" Padding="12,6"
+                                                            IsVisible="{Binding SiteViewModel.DumpStatus, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                                                        <TextBlock Classes="mono accent" FontSize="10.5" Text="{Binding SiteViewModel.DumpStatus}" TextTrimming="CharacterEllipsis"/>
+                                                    </Border>
+                                                    <DataGrid Classes="mono" ItemsSource="{Binding SiteViewModel.SelectedSite.PoolStats.Workers}" AutoGenerateColumns="False" MaxHeight="160">
                                                         <DataGrid.Columns>
-                                                            <DataGridTextColumn Header="PID" Binding="{Binding Pid}" Width="80"/>
-                                                            <DataGridTextColumn Header="App pool" Binding="{Binding AppPoolName}" Width="*"/>
-                                                            <DataGridTextColumn Header="State" Binding="{Binding State}" Width="90"/>
-                                                            <DataGridTextColumn Header="Memory (KB)" Binding="{Binding MemoryKb}" Width="110"/>
+                                                            <DataGridTextColumn Header="PID" Binding="{Binding Pid}" Width="72"/>
+                                                            <DataGridTextColumn Header="State" Binding="{Binding State}" Width="*"/>
+                                                            <DataGridTextColumn Header="CPU" Binding="{Binding CpuText}" Width="76"/>
+                                                            <DataGridTextColumn Header="RAM" Binding="{Binding MemoryText}" Width="86"/>
+                                                            <DataGridTemplateColumn Header="" Width="92">
+                                                                <DataGridTemplateColumn.CellTemplate>
+                                                                    <DataTemplate x:DataType="models:WorkerProcessInfo">
+                                                                        <Button Padding="8,2" Margin="4,0" FontSize="11" HorizontalAlignment="Right"
+                                                                                Command="{Binding #SitesList.((vm:MainWindowViewModel)DataContext).SiteViewModel.DumpWorkerCmd}"
+                                                                                CommandParameter="{Binding Pid}"
+                                                                                IsEnabled="{Binding !#SitesList.((vm:MainWindowViewModel)DataContext).SiteViewModel.IsDumping}"
+                                                                                ToolTip.Tip="Write a full memory dump of this worker (opens the folder when done)">
+                                                                            <StackPanel Spacing="5"><avalonia:Icon Value="fa-solid fa-download" FontSize="9"/><TextBlock Text="Dump" FontSize="11"/></StackPanel>
+                                                                        </Button>
+                                                                    </DataTemplate>
+                                                                </DataGridTemplateColumn.CellTemplate>
+                                                            </DataGridTemplateColumn>
                                                         </DataGrid.Columns>
                                                     </DataGrid>
                                                 </DockPanel>
