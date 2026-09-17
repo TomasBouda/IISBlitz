@@ -49,6 +49,7 @@ namespace TomLabs.IISBlitz.App
                 var dir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "IISBlitz");
                 Directory.CreateDirectory(dir);
                 File.AppendAllText(Path.Combine(dir, "crash.log"), $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] {ex}{Environment.NewLine}{Environment.NewLine}");
+                Services.AppLog.Write($"CRASH: {ex.GetType().Name}: {ex.Message}");
             }
             catch
             {

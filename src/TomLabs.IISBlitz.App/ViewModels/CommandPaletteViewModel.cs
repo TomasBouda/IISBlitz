@@ -122,6 +122,10 @@ public partial class CommandPaletteViewModel : ObservableObject
         {
             var build = $"{updater.Build.Version} · {updater.Channel.ToString().ToLowerInvariant()} channel";
             _all.Add(new PaletteItem("App", "fa-solid fa-cloud-arrow-down", "Check for updates", build, "", () => _ = updater.CheckAsync()));
+            _all.Add(new PaletteItem("App", "fa-solid fa-file-lines", "Open app log", Services.AppLog.Path, "", () =>
+            {
+                try { System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(Services.AppLog.Path) { UseShellExecute = true }); } catch { }
+            }));
             var other = updater.Channel == TomLabs.AutoUpdate.UpdateChannel.Stable ? TomLabs.AutoUpdate.UpdateChannel.Nightly : TomLabs.AutoUpdate.UpdateChannel.Stable;
             _all.Add(new PaletteItem("App", "fa-solid fa-code-branch", $"Switch to {other.ToString().ToLowerInvariant()} updates",
                 other == TomLabs.AutoUpdate.UpdateChannel.Nightly ? "latest commit on master" : "tagged releases only", "", () => updater.Channel = other));

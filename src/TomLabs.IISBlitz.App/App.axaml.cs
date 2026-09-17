@@ -100,7 +100,7 @@ public partial class App : Application
                 lnm1GwBK2g2HHRj+NF8Tq1sRToA4BfS3sHWJsUci0+LClMnhk8LtOBdnOw==
                 -----END PUBLIC KEY-----
                 """,
-            Log = message => Console.Error.WriteLine(message),
+            Log = Services.AppLog.Write,
         });
     }
 

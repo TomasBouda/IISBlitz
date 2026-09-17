@@ -628,7 +628,11 @@
                             </MultiBinding>
                         </TextBlock.Text>
                     </TextBlock>
-                    <update:UpdateBanner Grid.Column="2" VerticalAlignment="Center"/>
+                    <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="12">
+                        <update:UpdateBanner VerticalAlignment="Center"/>
+                        <TextBlock Classes="mono muted" FontSize="10.5" VerticalAlignment="Center" Text="{Binding UpdateStatus}"
+                                   ToolTip.Tip="Updater state; the full log is in %APPDATA%IISBlitziisblitz.log"/>
+                    </StackPanel>
                     <TextBlock Grid.Column="4" Classes="mono muted" FontSize="11" Text="{Binding SiteViewModel.StatusText}" VerticalAlignment="Center"/>
                 </Grid>
             </Border>

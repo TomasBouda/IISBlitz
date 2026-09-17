@@ -18,6 +18,10 @@ namespace TomLabs.IISBlitz.App.ViewModels
         [ObservableProperty]
         private int _selectedTabIndex;
 
+        /// <summary>Last outcome of the updater for the status bar: "up to date", the error, or why updating is off.</summary>
+        [ObservableProperty]
+        private string _updateStatus = string.Empty;
+
         /// <summary>
         /// "v0.5.0" for releases, "v0.5.0-nightly.abc1234" for continuous builds: the informational version carries
         /// the suffix the build passes in, while the "+commit" metadata the SDK appends is not worth the space.
@@ -36,6 +40,15 @@ namespace TomLabs.IISBlitz.App.ViewModels
             return version is null ? "dev" : $"v{version.Major}.{version.Minor}.{version.Build}";
         }
 
+        private static string DescribeUpdater(TomLabs.AutoUpdate.Updater updater) => updater.State switch
+        {
+            TomLabs.AutoUpdate.UpdateState.Disabled => $"updates off: {updater.DisabledReason}",
+            TomLabs.AutoUpdate.UpdateState.Checking => "checking for updates…",
+            TomLabs.AutoUpdate.UpdateState.UpToDate => $"up to date · {updater.Channel.ToString().ToLowerInvariant()} · {updater.LastCheck:HH:mm}",
+            TomLabs.AutoUpdate.UpdateState.Failed => $"update check failed: {updater.Error}",
+            _ => string.Empty,
+        };
+
         public string[] PermissionRights { get; } = { "FullControl", "Modify", "ReadAndExecute", "Read", "Write", "ListDirectory" };
         public string[] PermissionTypes { get; } = { "Allow", "Deny" };
         public string[] EventLevels { get; } = { "All", "Error", "Warning", "Info" };
@@ -43,6 +56,12 @@ namespace TomLabs.IISBlitz.App.ViewModels
         public MainWindowViewModel()
         {
             Palette = new CommandPaletteViewModel(this);
+
+            if (TomLabs.AutoUpdate.Updater.Current is { } updater)
+            {
+                updater.StateChanged += (_, _) => UpdateStatus = DescribeUpdater(updater);
+                UpdateStatus = DescribeUpdater(updater);
+            }
 
             AppVersion = ReadVersion();
         }
