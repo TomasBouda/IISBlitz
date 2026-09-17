@@ -6,6 +6,8 @@
 - Added: one-click full memory dump of a worker process (Documents\IISBlitz\dumps), opens in Visual Studio, WinDbg or dotnet-dump.
 - Added: the status bar shows the updater state (up to date / check failed / why updating is off) and the app writes %APPDATA%\IISBlitz\iisblitz.log; "Open app log" in the command palette.
 - Fixed: nightly builds no longer get stuck on a build whose commit hash happens to sort high (updater 0.2.1).
+- Changed: built on .NET 10.
+- Changed: the health endpoint card colours the status (Healthy green, Degraded amber, Unhealthy red).
 - Changed: updates keep the previous executable until the new build shows its window; a build that fails to start is rolled back automatically.
 - Changed: update manifests are signed; the app only installs builds signed by the release pipeline.
 - Removed: the Ping / 5× ping health check and the response time chart; the automatic GET /health probe on the overview stays.

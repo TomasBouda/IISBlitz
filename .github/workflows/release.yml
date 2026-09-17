@@ -15,5 +15,6 @@ jobs:
       project: src/TomLabs.IISBlitz.App/TomLabs.IISBlitz.App.csproj
       app-name: IISBlitz
       channel: stable
+      dotnet-version: '10.0.x'
     secrets:
       signing-key: ${{ secrets.UPDATE_SIGNING_KEY }}

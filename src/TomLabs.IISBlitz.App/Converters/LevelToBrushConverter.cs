@@ -7,7 +7,8 @@ using Avalonia.Media;
 namespace TomLabs.IISBlitz.App.Converters;
 
 /// <summary>
-/// Maps a log / event level name ("Error", "Warning", "Info", ...) to the matching semantic brush from Tokens.axaml.
+/// Maps a log / event level ("Error", "Warning", "Info") or a health status ("Healthy", "Degraded", "Unhealthy")
+/// to the matching semantic brush from Tokens.axaml.
 /// </summary>
 public sealed class LevelToBrushConverter : IValueConverter
 {
@@ -18,9 +19,9 @@ public sealed class LevelToBrushConverter : IValueConverter
         var level = value?.ToString()?.ToLowerInvariant() ?? string.Empty;
         var key = level switch
         {
-            _ when level.StartsWith("err") || level.StartsWith("crit") || level.StartsWith("fatal") => "ErrorBrush",
-            _ when level.StartsWith("warn") => "WarnBrush",
-            _ when level.StartsWith("info") || level.StartsWith("log") => "RunningBrush",
+            _ when level.StartsWith("err") || level.StartsWith("crit") || level.StartsWith("fatal") || level.StartsWith("unhealthy") => "ErrorBrush",
+            _ when level.StartsWith("warn") || level.StartsWith("degraded") => "WarnBrush",
+            _ when level.StartsWith("info") || level.StartsWith("log") || level.StartsWith("healthy") || level == "ok" => "RunningBrush",
             _ => "TextMutedBrush",
         };
 

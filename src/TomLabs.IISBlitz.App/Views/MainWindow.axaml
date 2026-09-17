@@ -225,7 +225,8 @@
                                                 <StackPanel Spacing="4">
                                                     <TextBlock Classes="label" Text="Health endpoint"/>
                                                     <TextBlock Classes="value muted" Text="probing…" IsVisible="{Binding SiteViewModel.HasHealthEndpoint, Converter={x:Static ObjectConverters.IsNull}}"/>
-                                                    <TextBlock Classes="value running" Text="{Binding SiteViewModel.HealthEndpointStatus}"
+                                                    <TextBlock Classes="value" Text="{Binding SiteViewModel.HealthEndpointStatus}"
+                                                               Foreground="{Binding SiteViewModel.HealthEndpointStatus, Converter={x:Static converters:LevelToBrushConverter.Instance}}"
                                                                IsVisible="{Binding SiteViewModel.HasHealthEndpoint, FallbackValue=False, TargetNullValue=False}"/>
                                                     <TextBlock Classes="value muted" Text="not exposed"
                                                                IsVisible="{Binding SiteViewModel.HasHealthEndpoint, Converter={x:Static BoolConverters.Not}, FallbackValue=False, TargetNullValue=False}"/>

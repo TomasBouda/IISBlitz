@@ -6,7 +6,7 @@
 
 A fast desktop console for the IIS sites on a Windows server: start, stop and recycle, edit `appsettings`
 and `web.config` in place, watch CPU and memory of every app pool, read logs and Windows events, take a
-memory dump — one portable exe that keeps itself up to date. Built with **Avalonia UI** and **.NET 9**.
+memory dump — one portable exe that keeps itself up to date. Built with **Avalonia UI** and **.NET 10**.
 
 <p align="center">
   <img src="/img/app.png" alt="IISBlitz overview" width="900"/>
@@ -125,7 +125,7 @@ Both go through the shared `publish-app.yml` workflow of TomLabs.AutoUpdate, whi
 | IIS | Microsoft.Web.Administration; `System.Diagnostics.Eventing.Reader` for events |
 | Updates | TomLabs.AutoUpdate (GitHub Releases source, signed manifests) |
 | Icons | Projektanker.Icons.Avalonia (FontAwesome) |
-| Target | .NET 9, Windows x64 / arm64 |
+| Target | .NET 10, Windows x64 / arm64 |
 
 ## License
 
