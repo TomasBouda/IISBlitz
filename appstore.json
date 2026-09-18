@@ -1,0 +1,8 @@
+{
+  "displayName": "IISBlitz",
+  "tagline": "Ops console for IIS: sites, pools, config, logs, live CPU/RAM and memory dumps",
+  "tags": ["windows", "iis", "avalonia", "dotnet"],
+  "audience": "Public",
+  "repoUrl": "https://github.com/TomasBouda/IISBlitz",
+  "homepage": "https://github.com/TomasBouda/IISBlitz"
+}

@@ -2,6 +2,7 @@
 
 ## 0.6.1 — unreleased
 
+- Changed: amber bolt application icon (`icon.png`, window icon) matching the UI; `appstore.json` describes the app for the TomLabs app store, which links to these GitHub releases.
 - Added: open any file of a site as an extra tab ("+" in the tab strip or the palette); tabs are remembered per site, Ctrl+S saves every open file.
 - Added: the overview lists the site's applications with their pools and a Recycle button per pool — recycling restarts only that pool, so sub-applications in other pools keep running.
 - Added: live CPU and memory of every app pool's worker processes — in the sidebar, on the overview cards and as two-minute charts.
