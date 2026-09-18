@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -24,6 +25,9 @@ public sealed class UserSettings
 
     /// <summary>"Stable" or "Nightly"; null follows the channel of the running build.</summary>
     public string? UpdateChannel { get; set; }
+
+    /// <summary>Extra files opened as tabs, per site name, so they come back next time the site is selected.</summary>
+    public Dictionary<string, List<string>> OpenFiles { get; set; } = new();
 
     public static UserSettings Load()
     {

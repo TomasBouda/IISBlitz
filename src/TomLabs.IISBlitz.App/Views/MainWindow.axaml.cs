@@ -3,6 +3,10 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
+using Avalonia.Platform.Storage;
+using System.Collections.Generic;
+using System.Collections.Specialized;
+using System.Linq;
 using Avalonia.Media;
 using Avalonia.Styling;
 using Avalonia.Threading;
@@ -21,6 +25,8 @@ namespace TomLabs.IISBlitz.App.Views
         private SearchHighlightTransformer? _logSearchHighlighter;
         private TextMate.Installation? _jsonTextMate;
         private TextMate.Installation? _xmlTextMate;
+        private readonly Dictionary<OpenFileViewModel, TabItem> _fileTabs = new();
+        private SiteInfo? _tabsSite;
 
         public MainWindow()
         {
@@ -49,13 +55,25 @@ namespace TomLabs.IISBlitz.App.Views
             // The window is up: a freshly installed update may drop its rollback backup.
             TomLabs.AutoUpdate.Updater.Current?.MarkHealthy();
 
-            if (Vm is { } vm && _logSearchHighlighter != null)
+            if (Vm is { } vm)
             {
+                vm.OpenFilePicker = () => _ = OpenFilePickerAsync();
+                vm.FocusFile = file => { if (_fileTabs.TryGetValue(file, out var tab)) Tabs.SelectedItem = tab; };
                 vm.SiteViewModel.PropertyChanged += (_, args) =>
+                {
+                    if (args.PropertyName == nameof(SiteViewModel.SelectedSite))
+                        BindFileTabs(vm.SiteViewModel.SelectedSite);
+                };
+                BindFileTabs(vm.SiteViewModel.SelectedSite);
+            }
+
+            if (Vm is { } vm2 && _logSearchHighlighter != null)
+            {
+                vm2.SiteViewModel.PropertyChanged += (_, args) =>
                 {
                     if (args.PropertyName == nameof(SiteViewModel.LogHighlightTerm))
                     {
-                        _logSearchHighlighter.SearchTerm = vm.SiteViewModel.LogHighlightTerm;
+                        _logSearchHighlighter.SearchTerm = vm2.SiteViewModel.LogHighlightTerm;
                         Dispatcher.UIThread.Post(() => LogViewer?.TextArea.TextView.Redraw());
                     }
                 };
@@ -120,6 +138,7 @@ namespace TomLabs.IISBlitz.App.Views
                     case Key.S:
                         vm.SiteViewModel.SaveAppSettingsCmd.Execute(null);
                         vm.SiteViewModel.SaveWebConfigCmd.Execute(null);
+                        vm.SiteViewModel.SaveOpenFiles();
                         e.Handled = true;
                         break;
                     case Key.R:
@@ -174,6 +193,88 @@ namespace TomLabs.IISBlitz.App.Views
         {
             if (e.Source is Visual source && source.FindAncestorOfType<ListBoxItem>(true) != null)
                 Vm?.Palette.RunSelected();
+        }
+
+        // ----- Extra file tabs -----
+
+        /// <summary>Mirrors the selected site's OpenFiles collection into TabItems after the fixed tabs.</summary>
+        private void BindFileTabs(SiteInfo? site)
+        {
+            if (_tabsSite != null)
+                _tabsSite.OpenFiles.CollectionChanged -= OnOpenFilesChanged;
+
+            foreach (var tab in _fileTabs.Values)
+                Tabs.Items.Remove(tab);
+            _fileTabs.Clear();
+
+            _tabsSite = site;
+            if (site == null) return;
+
+            site.OpenFiles.CollectionChanged += OnOpenFilesChanged;
+            foreach (var file in site.OpenFiles)
+                AddFileTab(file);
+        }
+
+        private void OnOpenFilesChanged(object? sender, NotifyCollectionChangedEventArgs e)
+        {
+            foreach (var file in e.OldItems?.OfType<OpenFileViewModel>() ?? Enumerable.Empty<OpenFileViewModel>())
+            {
+                if (_fileTabs.Remove(file, out var tab))
+                {
+                    var wasSelected = ReferenceEquals(Tabs.SelectedItem, tab);
+                    Tabs.Items.Remove(tab);
+                    if (wasSelected) Tabs.SelectedIndex = 0;
+                }
+            }
+
+            // Tabs restored while a site loads stay in the background; a tab the user opens gets focus.
+            var focus = Vm?.SiteViewModel.IsLoadingSite != true;
+            foreach (var file in e.NewItems?.OfType<OpenFileViewModel>() ?? Enumerable.Empty<OpenFileViewModel>())
+            {
+                var tab = AddFileTab(file);
+                if (focus) Tabs.SelectedItem = tab;
+            }
+        }
+
+        private TabItem AddFileTab(OpenFileViewModel file)
+        {
+            var name = new TextBlock { Text = file.FileName, VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center };
+            var dirty = new TextBlock { Text = "●", FontSize = 8, VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center, DataContext = file };
+            dirty.Bind(TextBlock.IsVisibleProperty, new Avalonia.Data.Binding(nameof(OpenFileViewModel.IsDirty)));
+            if (this.TryFindResource("AccentBrush", ActualThemeVariant, out var accent) && accent is IBrush accentBrush)
+                dirty.Foreground = accentBrush;
+
+            var close = new Button { Classes = { "icon", "small" }, Width = 18, Height = 18, Padding = new Thickness(0) };
+            close.Content = new Projektanker.Icons.Avalonia.Icon { Value = "fa-solid fa-xmark", FontSize = 10 };
+            ToolTip.SetTip(close, "Close tab");
+            close.Click += (_, _) => Vm?.SiteViewModel.CloseFileCmd.Execute(file);
+
+            var header = new StackPanel { Orientation = Avalonia.Layout.Orientation.Horizontal, Spacing = 6 };
+            header.Children.Add(name);
+            header.Children.Add(dirty);
+            header.Children.Add(close);
+            ToolTip.SetTip(header, file.Path);
+
+            var tab = new TabItem { Header = header, Content = new FileEditorView { DataContext = file } };
+            _fileTabs[file] = tab;
+            Tabs.Items.Add(tab);
+            return tab;
+        }
+
+        private void OnOpenFileClick(object? sender, RoutedEventArgs e) => _ = OpenFilePickerAsync();
+
+        private async System.Threading.Tasks.Task OpenFilePickerAsync()
+        {
+            if (Vm?.SiteViewModel.SelectedSite is not { } site) return;
+            var options = new FilePickerOpenOptions { Title = $"Open a file of {site.Name}", AllowMultiple = true };
+            try { options.SuggestedStartLocation = await StorageProvider.TryGetFolderFromPathAsync(site.PhysicalPath); } catch { /* keep default */ }
+
+            var picked = await StorageProvider.OpenFilePickerAsync(options);
+            foreach (var item in picked)
+            {
+                var path = item.TryGetLocalPath();
+                if (path != null) Vm.SiteViewModel.OpenFile(path);
+            }
         }
 
         // ----- Logs -----

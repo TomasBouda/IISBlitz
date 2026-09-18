@@ -2,6 +2,8 @@
 
 ## 0.6.1 — unreleased
 
+- Added: open any file of a site as an extra tab ("+" in the tab strip or the palette); tabs are remembered per site, Ctrl+S saves every open file.
+- Added: the overview lists the site's applications with their pools and a Recycle button per pool — recycling restarts only that pool, so sub-applications in other pools keep running.
 - Added: live CPU and memory of every app pool's worker processes — in the sidebar, on the overview cards and as two-minute charts.
 - Added: one-click full memory dump of a worker process (Documents\IISBlitz\dumps), opens in Visual Studio, WinDbg or dotnet-dump.
 - Added: the status bar shows the updater state (up to date / check failed / why updating is off) and the app writes %APPDATA%\IISBlitz\iisblitz.log; "Open app log" in the command palette.

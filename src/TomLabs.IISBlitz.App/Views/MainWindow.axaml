@@ -188,7 +188,12 @@
                         </Grid>
 
                         <!-- Tabs -->
-                        <TabControl Grid.Row="1" SelectedIndex="{Binding SelectedTabIndex}">
+                        <TabControl Grid.Row="1" Name="Tabs" SelectedIndex="{Binding SelectedTabIndex}">
+                            <TabControl.Tag>
+                                <Button Classes="icon small" Name="OpenFileButton" Click="OnOpenFileClick" ToolTip.Tip="Open a file of this site in a new tab (remembered per site)">
+                                    <avalonia:Icon Value="fa-solid fa-plus" FontSize="11"/>
+                                </Button>
+                            </TabControl.Tag>
 
                             <!-- Overview -->
                             <TabItem Header="Overview">
@@ -317,6 +322,33 @@
                                                 </DockPanel>
                                             </Border>
                                         </Grid>
+
+                                        <Border Classes="table fade-in d4" ToolTip.Tip="Recycle restarts one pool: the root and every sub-application in that pool; sub-applications in other pools keep running">
+                                            <DockPanel>
+                                                <Border DockPanel.Dock="Top" Classes="tablehead">
+                                                    <TextBlock Classes="section" Text="APPLICATIONS · POOLS"/>
+                                                </Border>
+                                                <DataGrid Classes="mono" ItemsSource="{Binding SiteViewModel.SelectedSite.Applications}" AutoGenerateColumns="False" MaxHeight="200">
+                                                    <DataGrid.Columns>
+                                                        <DataGridTextColumn Header="Path" Binding="{Binding Path}" Width="140"/>
+                                                        <DataGridTextColumn Header="App pool" Binding="{Binding AppPool}" Width="*"/>
+                                                        <DataGridTextColumn Header="Physical path" Binding="{Binding PhysicalPath}" Width="2*"/>
+                                                        <DataGridTemplateColumn Header="" Width="100">
+                                                            <DataGridTemplateColumn.CellTemplate>
+                                                                <DataTemplate x:DataType="models:SiteApplication">
+                                                                    <Button Padding="8,2" Margin="4,0" FontSize="11" HorizontalAlignment="Right"
+                                                                            Command="{Binding #SitesList.((vm:MainWindowViewModel)DataContext).SiteViewModel.RecyclePoolByNameCmd}"
+                                                                            CommandParameter="{Binding AppPool}"
+                                                                            ToolTip.Tip="Recycle this application's pool">
+                                                                        <StackPanel Spacing="5"><avalonia:Icon Value="fa-solid fa-recycle" FontSize="9"/><TextBlock Text="Recycle" FontSize="11"/></StackPanel>
+                                                                    </Button>
+                                                                </DataTemplate>
+                                                            </DataGridTemplateColumn.CellTemplate>
+                                                        </DataGridTemplateColumn>
+                                                    </DataGrid.Columns>
+                                                </DataGrid>
+                                            </DockPanel>
+                                        </Border>
 
                                         <Border Classes="table fade-in d4">
                                             <DockPanel>

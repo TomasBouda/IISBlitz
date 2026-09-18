@@ -25,7 +25,11 @@
                                     BorderThickness="0,0,0,1"
                                     BorderBrush="{DynamicResource HairlineBrush}"
                                     Padding="18,0">
-                                <ItemsPresenter Name="PART_ItemsPresenter" ItemsPanel="{TemplateBinding ItemsPanel}"/>
+                                <Grid ColumnDefinitions="Auto,*">
+                                    <ItemsPresenter Name="PART_ItemsPresenter" ItemsPanel="{TemplateBinding ItemsPanel}"/>
+                                    <!-- Tag holds optional strip content (e.g. an "add tab" button). -->
+                                    <ContentPresenter Grid.Column="1" Content="{TemplateBinding Tag}" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="10,0,0,0"/>
+                                </Grid>
                             </Border>
                             <ContentPresenter Name="PART_SelectedContentHost"
                                               Content="{TemplateBinding SelectedContent}"

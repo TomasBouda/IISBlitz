@@ -40,6 +40,13 @@ public partial class SiteInfo : ObservableObject
     [ObservableProperty]
     private string? _selectedLogPath;
 
+    /// <summary>Root and sub-applications of the site with the pool each one runs in.</summary>
+    [ObservableProperty]
+    private ObservableCollection<SiteApplication> _applications = new();
+
+    /// <summary>Files the user opened as extra tabs for this site.</summary>
+    public ObservableCollection<OpenFileViewModel> OpenFiles { get; } = new();
+
     /// <summary>Live CPU / memory of the app pool, shared with every site on the same pool.</summary>
     [ObservableProperty]
     private PoolStats? _poolStats;

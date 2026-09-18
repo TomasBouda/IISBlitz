@@ -16,6 +16,8 @@ memory dump — one portable exe that keeps itself up to date. Built with **Aval
 
 **Sites and pools**
 - Start / stop / restart a site, start / stop / recycle its application pool
+- Applications of the site with their pools and a Recycle per pool — recycling restarts one pool only, so
+  sub-applications in other pools are not touched
 - Bindings and SSL certificates (subject, issuer, expiry, thumbprint) at a glance
 - Automatic `GET /health` probe — shows the status and version the deployed app reports
 - Open the site in the browser or its folder in Explorer, copy the physical path
@@ -26,6 +28,8 @@ memory dump — one portable exe that keeps itself up to date. Built with **Aval
 - **Apply to web.config** writes `ASPNETCORE_ENVIRONMENT` for the selected file's environment; the toolbar
   shows what web.config currently sets (or that it is not set and ASP.NET Core defaults to Production)
 - `web.config` editor with XML highlighting, save and reload from disk
+- **Any file as a tab** — the `+` in the tab strip opens a file of the site (highlighting by extension); open tabs are
+  remembered per site and come back next time, `Ctrl+S` saves all of them
 - Folder permissions of the site: list, add and remove ACL entries
 
 **Monitoring**

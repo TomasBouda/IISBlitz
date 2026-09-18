@@ -113,6 +113,9 @@ public partial class SiteViewModel : ObservableObject
 
     /// <summary>True while a site is being loaded; suppresses reactions to property churn during setup.</summary>
     private bool _loadingSite;
+
+    /// <summary>Lets the view tell restored tabs from tabs the user just opened.</summary>
+    public bool IsLoadingSite => _loadingSite;
     private int _healthProbeVersion;
 
     partial void OnEventLogFilterChanged(string value) => FilterEventLog(value);
@@ -162,6 +165,11 @@ public partial class SiteViewModel : ObservableObject
     public ICommand RecyclePoolCmd { get; }
     public ICommand ViewLogCmd { get; }
     public ICommand ToggleThemeCmd { get; }
+    public ICommand RecyclePoolByNameCmd { get; }
+    public ICommand OpenFileCmd { get; }
+    public ICommand CloseFileCmd { get; }
+    public ICommand SaveFileCmd { get; }
+    public ICommand ReloadFileCmd { get; }
     public ICommand DumpWorkerCmd { get; }
     public ICommand OpenDumpFolderCmd { get; }
     public ICommand SearchLogCmd { get; }
@@ -198,6 +206,11 @@ public partial class SiteViewModel : ObservableObject
         RecyclePoolCmd = ReactiveCommand.Create(RecycleAppPool);
         ViewLogCmd = ReactiveCommand.Create<string>(ViewLog);
         ToggleThemeCmd = ReactiveCommand.Create(ToggleTheme);
+        RecyclePoolByNameCmd = ReactiveCommand.Create<string?>(RecyclePoolByName);
+        OpenFileCmd = ReactiveCommand.Create<string?>(path => { if (path != null) OpenFile(path); });
+        CloseFileCmd = ReactiveCommand.Create<OpenFileViewModel?>(file => { if (file != null) CloseFile(file); });
+        SaveFileCmd = ReactiveCommand.Create<OpenFileViewModel?>(file => { if (file != null && file.Save()) LogStatus($"Saved {file.FileName}"); });
+        ReloadFileCmd = ReactiveCommand.Create<OpenFileViewModel?>(file => file?.Reload());
         DumpWorkerCmd = ReactiveCommand.Create<int>(pid => _ = DumpWorkerAsync(pid));
         OpenDumpFolderCmd = ReactiveCommand.Create(OpenDumpFolder);
         SearchLogCmd = ReactiveCommand.Create(SearchLog);
@@ -815,6 +828,81 @@ public partial class SiteViewModel : ObservableObject
         }
     }
 
+    /// <summary>Recycles any pool of the site (a sub-application may run in a pool of its own).</summary>
+    private void RecyclePoolByName(string? poolName)
+    {
+        if (string.IsNullOrEmpty(poolName)) return;
+        try
+        {
+            _serverManager = new ServerManager();
+            _serverManager.ApplicationPools[poolName].Recycle();
+            LogStatus($"Recycled {poolName}");
+            RefreshSites();
+        }
+        catch (Exception ex)
+        {
+            LogStatus($"Failed to recycle {poolName}: {ex.Message}");
+        }
+    }
+
+    private void LogStatus(string message)
+    {
+        StatusText = message;
+        Services.AppLog.Write(message);
+    }
+
+    // ----- Extra file tabs (remembered per site) -----
+
+    /// <summary>Opens a file as a tab of the selected site, or focuses it when it is already open.</summary>
+    public OpenFileViewModel? OpenFile(string path)
+    {
+        if (SelectedSite == null) return null;
+        var existing = SelectedSite.OpenFiles.FirstOrDefault(f => string.Equals(f.Path, path, StringComparison.OrdinalIgnoreCase));
+        if (existing != null) return existing;
+
+        var file = new OpenFileViewModel(path);
+        SelectedSite.OpenFiles.Add(file);
+        PersistOpenFiles(SelectedSite);
+        return file;
+    }
+
+    private void CloseFile(OpenFileViewModel file)
+    {
+        if (SelectedSite == null) return;
+        SelectedSite.OpenFiles.Remove(file);
+        PersistOpenFiles(SelectedSite);
+    }
+
+    /// <summary>Saves every open file that has unsaved changes (Ctrl+S).</summary>
+    public void SaveOpenFiles()
+    {
+        if (SelectedSite == null) return;
+        foreach (var file in SelectedSite.OpenFiles.Where(f => f.IsDirty))
+            file.Save();
+    }
+
+    private static void PersistOpenFiles(SiteInfo site)
+    {
+        var settings = Services.UserSettings.Load();
+        var paths = site.OpenFiles.Select(f => f.Path).ToList();
+        if (paths.Count == 0) settings.OpenFiles.Remove(site.Name);
+        else settings.OpenFiles[site.Name] = paths;
+        settings.Save();
+    }
+
+    /// <summary>Restores the tabs remembered for the site; files that vanished are dropped from the list.</summary>
+    private static void RestoreOpenFiles(SiteInfo site)
+    {
+        if (site.OpenFiles.Count > 0) return;
+        var settings = Services.UserSettings.Load();
+        if (!settings.OpenFiles.TryGetValue(site.Name, out var paths)) return;
+
+        foreach (var path in paths.Where(File.Exists))
+            site.OpenFiles.Add(new OpenFileViewModel(path));
+        if (site.OpenFiles.Count != paths.Count)
+            PersistOpenFiles(site);
+    }
+
     private void RecycleAppPool()
     {
         if (SelectedSite == null) return;
@@ -884,6 +972,12 @@ public partial class SiteViewModel : ObservableObject
                 sitePath = Environment.ExpandEnvironmentVariables(sitePath);
                 var logsDir = Path.Combine(sitePath, "logs");
 
+                var applications = new ObservableCollection<SiteApplication>(
+                    site.Applications.Select(a => new SiteApplication(
+                        a.Path,
+                        a.ApplicationPoolName,
+                        Environment.ExpandEnvironmentVariables(a.VirtualDirectories[0].PhysicalPath))));
+
                 var bindings = new ObservableCollection<BindingInfo>(
                     site.Bindings.Select(b =>
                     {
@@ -904,6 +998,7 @@ public partial class SiteViewModel : ObservableObject
                         PoolStats = _monitor.GetOrCreate(site.Applications[0].ApplicationPoolName),
                         PhysicalPath = sitePath,
                         Bindings = bindings,
+                        Applications = applications,
                         Logs = Directory.Exists(logsDir)
                             ? new ObservableCollection<string>(Directory.GetFiles(logsDir, "*.log", SearchOption.AllDirectories))
                             : null
@@ -915,6 +1010,7 @@ public partial class SiteViewModel : ObservableObject
                     existingSite.IsPoolRunning = appPool.State == ObjectState.Started;
                     existingSite.PoolStats = _monitor.GetOrCreate(site.Applications[0].ApplicationPoolName);
                     existingSite.Bindings = bindings;
+                    existingSite.Applications = applications;
                     existingSite.Logs = Directory.Exists(logsDir)
                         ? new ObservableCollection<string>(Directory.GetFiles(logsDir, "*.log", SearchOption.AllDirectories))
                         : null;
@@ -1063,6 +1159,7 @@ public partial class SiteViewModel : ObservableObject
 
         LoadCertificates();
         LoadPermissions();
+        RestoreOpenFiles(SelectedSite);
     }
 
     private void LoadCertificates()

@@ -45,9 +45,15 @@ namespace TomLabs.IISBlitz.App.ViewModels
             TomLabs.AutoUpdate.UpdateState.Disabled => $"updates off: {updater.DisabledReason}",
             TomLabs.AutoUpdate.UpdateState.Checking => "checking for updates…",
             TomLabs.AutoUpdate.UpdateState.UpToDate => $"up to date · {updater.Channel.ToString().ToLowerInvariant()} · {updater.LastCheck:HH:mm}",
-            TomLabs.AutoUpdate.UpdateState.Failed => $"update check failed: {updater.Error}",
+            TomLabs.AutoUpdate.UpdateState.Failed => updater.Error ?? "update failed",
             _ => string.Empty,
         };
+
+        /// <summary>Set by the window: shows the file picker for the selected site.</summary>
+        public Action? OpenFilePicker { get; set; }
+
+        /// <summary>Set by the window: selects the tab of an open file.</summary>
+        public Action<OpenFileViewModel>? FocusFile { get; set; }
 
         public string[] PermissionRights { get; } = { "FullControl", "Modify", "ReadAndExecute", "Read", "Write", "ListDirectory" };
         public string[] PermissionTypes { get; } = { "Allow", "Deny" };

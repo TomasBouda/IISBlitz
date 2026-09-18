@@ -93,6 +93,17 @@ public partial class CommandPaletteViewModel : ObservableObject
             _all.Add(new PaletteItem("Actions", "fa-solid fa-copy", "Copy physical path", site.PhysicalPath, "", () => vm.CopyPathCmd.Execute(null)));
             _all.Add(new PaletteItem("Actions", "fa-solid fa-floppy-disk", "Save appsettings.json", siteName, "Ctrl+S", () => vm.SaveAppSettingsCmd.Execute(null)));
             _all.Add(new PaletteItem("Actions", "fa-solid fa-floppy-disk", "Save web.config", siteName, "Ctrl+S", () => vm.SaveWebConfigCmd.Execute(null)));
+            _all.Add(new PaletteItem("Actions", "fa-solid fa-folder-plus", "Open file in a tab…", site.PhysicalPath, "", () => _main.OpenFilePicker?.Invoke()));
+            foreach (var file in site.OpenFiles)
+            {
+                var captured = file;
+                _all.Add(new PaletteItem("Jump to", "fa-solid fa-file-lines", captured.FileName, captured.Path, "", () => _main.FocusFile?.Invoke(captured)));
+            }
+            foreach (var app in site.Applications.Where(a => !a.IsRoot))
+            {
+                var pool = app.AppPool;
+                _all.Add(new PaletteItem("Actions", "fa-solid fa-recycle", $"Recycle pool of {app.Path}", pool, "", () => vm.RecyclePoolByNameCmd.Execute(pool)));
+            }
             foreach (var worker in site.PoolStats?.Workers ?? Enumerable.Empty<Models.WorkerProcessInfo>())
             {
                 var pid = worker.Pid;
