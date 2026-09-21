@@ -25,7 +25,8 @@
         <vm:MainWindowViewModel/>
     </Design.DataContext>
 
-    <Panel>
+    <!-- OffScreenMargin: a maximized window with a custom title bar otherwise hangs past the screen edge. -->
+    <Panel Margin="{Binding $parent[Window].OffScreenMargin}">
         <Grid RowDefinitions="44,*,Auto">
 
             <!-- ===== Header ===== -->
