@@ -56,7 +56,7 @@
     </ItemGroup>
 
     <ItemGroup>
-        <!-- Shared self-update library (git submodule, see lib/). -->
-        <ProjectReference Include="..\..\lib\TomLabs.AutoUpdate\src\TomLabs.AutoUpdate.Avalonia\TomLabs.AutoUpdate.Avalonia.csproj" />
+        <!-- Shared self-update library (nuget.org). -->
+        <PackageReference Include="TomLabs.AutoUpdate.Avalonia" Version="0.3.2" />
     </ItemGroup>
 </Project>

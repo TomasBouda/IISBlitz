@@ -91,13 +91,13 @@ Because the app runs elevated, these live in the profile of the account you elev
 ## Building
 
 ```bash
-git clone --recurse-submodules https://github.com/TomasBouda/IISBlitz.git
+git clone https://github.com/TomasBouda/IISBlitz.git
 cd IISBlitz
 dotnet run --project src/TomLabs.IISBlitz.App
 ```
 
-The updater library is a git submodule under `lib/TomLabs.AutoUpdate` (`git submodule update --init` after
-a plain clone). A release-style build — self-contained, trimmed, single file, ~25 MB:
+The updater library comes from nuget.org (`TomLabs.AutoUpdate.Avalonia`).
+A release-style build — self-contained, trimmed, single file, ~25 MB:
 
 ```bash
 dotnet publish src/TomLabs.IISBlitz.App/TomLabs.IISBlitz.App.csproj -c Release -r win-x64 -o publish
