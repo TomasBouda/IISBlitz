@@ -63,8 +63,8 @@
                     <Button Grid.Column="6" Classes="icon" Command="{Binding SiteViewModel.RefreshSitesCmd}" ToolTip.Tip="Refresh sites (F5)">
                         <avalonia:Icon Value="fa-solid fa-arrows-rotate" FontSize="13"/>
                     </Button>
-                    <Button Grid.Column="7" Classes="icon" Command="{Binding SiteViewModel.ToggleThemeCmd}" ToolTip.Tip="Toggle light / dark (Ctrl+Shift+L)">
-                        <avalonia:Icon Value="fa-solid fa-circle-half-stroke" FontSize="13"/>
+                    <Button Grid.Column="7" Classes="icon" Name="ThemeButton" Command="{Binding SiteViewModel.CycleThemeCmd}" ToolTip.Tip="{Binding SiteViewModel.ThemeTip}">
+                        <avalonia:Icon Value="{Binding SiteViewModel.ThemeIcon}" FontSize="13"/>
                     </Button>
                     <TextBlock Grid.Column="9" Classes="mono muted" FontSize="11" Text="{Binding AppVersion}" VerticalAlignment="Center"/>
                 </Grid>

@@ -2,6 +2,8 @@
 
 ## 0.6.1 — unreleased
 
+- Changed: the theme switch now has a System option that follows Windows live; earlier Light/Dark choices were reset to System once.
+- Added: the header button shows the current mode (half circle = System, sun, moon); the command palette can set each mode directly.
 - Changed: amber bolt application icon (`icon.png`, window icon) matching the UI; `appstore.json` describes the app for the TomLabs app store, which links to these GitHub releases.
 - Added: open any file of a site as an extra tab ("+" in the tab strip or the palette); tabs are remembered per site, Ctrl+S saves every open file.
 - Added: the overview lists the site's applications with their pools and a Recycle button per pool — recycling restarts only that pool, so sub-applications in other pools keep running.

@@ -20,8 +20,11 @@ public sealed class UserSettings
         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
     };
 
-    /// <summary>"Dark" or "Light"; null follows the operating system preference.</summary>
+    /// <summary>"Dark" or "Light"; null follows the operating system preference live.</summary>
     public string? Theme { get; set; }
+
+    /// <summary>Version of <see cref="Theme"/>; see <see cref="ThemeModes.CurrentVersion"/>.</summary>
+    public int ThemeVersion { get; set; }
 
     /// <summary>"Stable" or "Nightly"; null follows the channel of the running build.</summary>
     public string? UpdateChannel { get; set; }
@@ -42,6 +45,22 @@ public sealed class UserSettings
         }
 
         return new UserSettings();
+    }
+
+    /// <summary>
+    /// One-time reset of a Light/Dark choice saved by the old two-state toggle back to System, so every
+    /// installation follows Windows again; a choice made with the three-state switch is kept.
+    /// </summary>
+    public void MigrateTheme()
+    {
+        if (ThemeVersion >= ThemeModes.CurrentVersion)
+            return;
+
+        var reset = Theme is not null;
+        Theme = null;
+        ThemeVersion = ThemeModes.CurrentVersion;
+        if (reset)
+            Save();
     }
 
     public void Save()

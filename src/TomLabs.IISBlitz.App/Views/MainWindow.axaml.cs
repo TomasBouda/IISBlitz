@@ -128,7 +128,7 @@ namespace TomLabs.IISBlitz.App.Views
             }
             else if (e.KeyModifiers == (KeyModifiers.Control | KeyModifiers.Shift) && e.Key == Key.L)
             {
-                vm.SiteViewModel.ToggleThemeCmd.Execute(null);
+                vm.SiteViewModel.CycleThemeCmd.Execute(null);
                 e.Handled = true;
             }
             else if (e.KeyModifiers == KeyModifiers.Control)

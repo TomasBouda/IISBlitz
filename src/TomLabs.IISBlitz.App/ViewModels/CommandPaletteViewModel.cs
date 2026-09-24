@@ -127,7 +127,10 @@ public partial class CommandPaletteViewModel : ObservableObject
         }
 
         _all.Add(new PaletteItem("App", "fa-solid fa-arrows-rotate", "Refresh sites", "reload from IIS", "F5", () => vm.RefreshSitesCmd.Execute(null)));
-        _all.Add(new PaletteItem("App", "fa-solid fa-circle-half-stroke", "Toggle light / dark", "remembered for next start", "Ctrl+Shift+L", () => vm.ToggleThemeCmd.Execute(null)));
+        _all.Add(new PaletteItem("App", "fa-solid fa-circle-half-stroke", "Cycle theme", "system → light → dark", "Ctrl+Shift+L", () => vm.CycleThemeCmd.Execute(null)));
+        _all.Add(new PaletteItem("App", Services.ThemeModes.Icon(Services.ThemeModes.System), "Theme: system", "follows Windows", "", () => vm.SetThemeCmd.Execute(Services.ThemeModes.System)));
+        _all.Add(new PaletteItem("App", Services.ThemeModes.Icon(Services.ThemeModes.Light), "Theme: light", "remembered for next start", "", () => vm.SetThemeCmd.Execute(Services.ThemeModes.Light)));
+        _all.Add(new PaletteItem("App", Services.ThemeModes.Icon(Services.ThemeModes.Dark), "Theme: dark", "remembered for next start", "", () => vm.SetThemeCmd.Execute(Services.ThemeModes.Dark)));
 
         if (TomLabs.AutoUpdate.Updater.Current is { } updater)
         {

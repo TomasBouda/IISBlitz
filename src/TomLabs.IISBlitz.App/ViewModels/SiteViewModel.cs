@@ -164,7 +164,8 @@ public partial class SiteViewModel : ObservableObject
     public ICommand ReloadWebConfigCmd { get; }
     public ICommand RecyclePoolCmd { get; }
     public ICommand ViewLogCmd { get; }
-    public ICommand ToggleThemeCmd { get; }
+    public ICommand CycleThemeCmd { get; }
+    public ICommand SetThemeCmd { get; }
     public ICommand RecyclePoolByNameCmd { get; }
     public ICommand OpenFileCmd { get; }
     public ICommand CloseFileCmd { get; }
@@ -205,7 +206,8 @@ public partial class SiteViewModel : ObservableObject
         ReloadWebConfigCmd = ReactiveCommand.Create(ReloadWebConfig);
         RecyclePoolCmd = ReactiveCommand.Create(RecycleAppPool);
         ViewLogCmd = ReactiveCommand.Create<string>(ViewLog);
-        ToggleThemeCmd = ReactiveCommand.Create(ToggleTheme);
+        CycleThemeCmd = ReactiveCommand.Create(CycleTheme);
+        SetThemeCmd = ReactiveCommand.Create<string?>(SetTheme);
         RecyclePoolByNameCmd = ReactiveCommand.Create<string?>(RecyclePoolByName);
         OpenFileCmd = ReactiveCommand.Create<string?>(path => { if (path != null) OpenFile(path); });
         CloseFileCmd = ReactiveCommand.Create<OpenFileViewModel?>(file => { if (file != null) CloseFile(file); });
@@ -663,17 +665,38 @@ public partial class SiteViewModel : ObservableObject
         }
     }
 
-    private void ToggleTheme()
+    /// <summary>The stored theme choice; null = System. Read once, after App has migrated the settings.</summary>
+    private string? _theme = Services.UserSettings.Load().Theme;
+
+    /// <summary>The theme mode: System (follows Windows live), Light or Dark.</summary>
+    public string ThemeMode => Services.ThemeModes.Normalize(_theme);
+
+    public string ThemeIcon => Services.ThemeModes.Icon(_theme);
+
+    public string ThemeTip => ThemeMode switch
     {
-        if (Avalonia.Application.Current == null) return;
-        var next = Avalonia.Application.Current.ActualThemeVariant == Avalonia.Styling.ThemeVariant.Dark
-            ? Avalonia.Styling.ThemeVariant.Light
-            : Avalonia.Styling.ThemeVariant.Dark;
-        Avalonia.Application.Current.RequestedThemeVariant = next;
+        Services.ThemeModes.Light => "Theme: light — switch to dark (Ctrl+Shift+L)",
+        Services.ThemeModes.Dark => "Theme: dark — switch to system (Ctrl+Shift+L)",
+        _ => "Theme: system, follows Windows — switch to light (Ctrl+Shift+L)",
+    };
+
+    /// <summary>Header switch and Ctrl+Shift+L: System → Light → Dark → System.</summary>
+    private void CycleTheme() => SetTheme(Services.ThemeModes.Next(_theme));
+
+    private void SetTheme(string? mode)
+    {
+        mode = Services.ThemeModes.Normalize(mode);
+        _theme = mode == Services.ThemeModes.System ? null : mode;
 
         var settings = Services.UserSettings.Load();
-        settings.Theme = next == Avalonia.Styling.ThemeVariant.Dark ? "Dark" : "Light";
+        settings.Theme = _theme;
+        settings.ThemeVersion = Services.ThemeModes.CurrentVersion;
         settings.Save();
+
+        Services.ThemeModes.Apply(_theme);
+        OnPropertyChanged(nameof(ThemeMode));
+        OnPropertyChanged(nameof(ThemeIcon));
+        OnPropertyChanged(nameof(ThemeTip));
     }
 
     private static readonly string[] EventSourceHints =

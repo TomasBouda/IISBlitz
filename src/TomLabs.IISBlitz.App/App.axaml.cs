@@ -23,12 +23,9 @@ public partial class App : Application
     private void ApplySavedTheme()
     {
         var settings = Services.UserSettings.Load();
-        RequestedThemeVariant = settings.Theme switch
-        {
-            "Dark" => Avalonia.Styling.ThemeVariant.Dark,
-            "Light" => Avalonia.Styling.ThemeVariant.Light,
-            _ => Avalonia.Styling.ThemeVariant.Default,
-        };
+        settings.MigrateTheme();
+        // System (no saved choice) leaves the variant at Default, so the palette follows Windows live.
+        RequestedThemeVariant = Services.ThemeModes.ToVariant(settings.Theme);
     }
 
     public override void OnFrameworkInitializationCompleted()

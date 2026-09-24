@@ -47,7 +47,7 @@ memory dump — one portable exe that keeps itself up to date. Built with **Aval
 **UI**
 - **Command palette** (`Ctrl+K`): fuzzy search across sites, tabs and actions — recycle, restart, dump a
   worker, switch the update channel, open the app log…
-- Dark and light theme; follows the OS, the toggle (`Ctrl+Shift+L`) remembers your choice
+- Theme switch System / Light / Dark (`Ctrl+Shift+L` cycles); System follows Windows live, Light and Dark are remembered
 - Keyboard: `F5` refresh · `Ctrl+S` save · `Ctrl+R` recycle · `Ctrl+F` filter sites
 - Version in the header, update banner and updater state in the status bar
 
